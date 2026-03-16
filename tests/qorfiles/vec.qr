@@ -1,0 +1,51 @@
+namespace Core.Collections;
+
+pub type Vec<T>
+{
+	field length: i32 {
+		pub [ro],
+		[rw]
+	} = 0;
+
+	field capacity: i32 [rw];
+	field data: T[] [rw];
+	
+	pub @ctor(size: i32)
+	{
+		data = Core.Array.Alloc<T>(size);
+		capacity = data.length;
+	}
+
+	pub @geti(idx: i32) : T
+	{
+		return data[idx];
+	}
+
+	pub @seti(idx: i32, value: T) [rw]
+	{
+		data[idx] = value;
+	}
+
+	pub push(value: T) [rw]
+	{
+		if (length == capacity)
+		{
+			let new_capacity = capacity + 10; // yeah just arbitrary for the example
+
+			let new_data: [rw] = Core.Array.alloc<T>(new_capacity); // the old data array gets deleted by the GC at some point if all references are lost
+			
+			// copy data into new_data and assign, etc...
+
+			data = new_data;
+		}
+
+		data[length] = value;
+
+		length++;
+	}
+
+	pub getref(idx: i32) : T&
+	{
+		return &data[idx]; // illegal: cannot take address of array element (simplifies gc search and also why would you ever need to do this? just use a Core.Array.ArrayView<T>)
+	}
+}

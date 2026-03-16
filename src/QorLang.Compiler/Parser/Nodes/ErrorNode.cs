@@ -1,0 +1,14 @@
+namespace QorLang.Compiler.Parser.Nodes;
+
+public class ErrorNode : ASTNode
+{
+	public override bool Equals(object? obj)
+	{
+		return obj is ErrorNode;
+	}
+
+	public override int GetHashCode()
+	{
+		return typeof(ErrorNode).GetHashCode();
+	}
+}

@@ -1,0 +1,2 @@
+T[]& // illegal, cannot hold reference of array type
+T&[] // legal, can hold array type of references
