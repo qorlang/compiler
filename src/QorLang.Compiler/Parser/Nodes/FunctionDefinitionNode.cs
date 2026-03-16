@@ -30,6 +30,6 @@ public class FunctionDefinitionNode(
 
 	public override int GetHashCode()
 	{
-		return HashCode.Combine(Name, AccessLevel, Parameters, TypeParameters, ReturnType, Body);
+		return HashCode.Combine(Name, AccessLevel, NodeUtils.GetArrayHash(Parameters), NodeUtils.GetArrayHash(TypeParameters), ReturnType, NodeUtils.GetArrayHash(Body));
 	}
 }

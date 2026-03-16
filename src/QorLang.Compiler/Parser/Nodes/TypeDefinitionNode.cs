@@ -18,6 +18,6 @@ public class TypeDefinitionNode(string name, AccessLevel accessLevel, string[] t
 
 	public override int GetHashCode()
 	{
-		return HashCode.Combine(Name, AccessLevel, TypeParameters, Declarations);
+		return HashCode.Combine(Name, AccessLevel, NodeUtils.GetArrayHash(TypeParameters), Declarations);
 	}
 }

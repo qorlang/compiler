@@ -31,7 +31,7 @@ public class FieldDeclarationNode(
 		foreach (var kvp in Protections.OrderBy(x => x.Key))
 		{
 			hash.Add(kvp.Key);
-			hash.Add(kvp.Value);
+			hash.Add(NodeUtils.GetArrayHash(kvp.Value));
 		}
 		return hash.ToHashCode();
 	}

@@ -16,6 +16,6 @@ public abstract class CallExpr(
 
 	public override int GetHashCode()
 	{
-		return HashCode.Combine(Target, Arguments);
+		return HashCode.Combine(Target, NodeUtils.GetArrayHash(Arguments));
 	}
 }

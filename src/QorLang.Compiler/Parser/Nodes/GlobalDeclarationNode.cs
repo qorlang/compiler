@@ -24,7 +24,7 @@ public class GlobalDeclarationNode(
 			if (!other.Protections.TryGetValue(kvp.Key, out var otherProtections) || !kvp.Value.SequenceEqual(otherProtections))
 				return false;
 		}
-		return (Initializer?.Equals(other.Initializer) ?? other.Initializer is null);
+		return Initializer?.Equals(other.Initializer) ?? other.Initializer is null;
 	}
 
 	public override int GetHashCode()

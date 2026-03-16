@@ -16,6 +16,6 @@ public abstract class NameReferenceExpression(
 
 	public override int GetHashCode()
 	{
-		return HashCode.Combine(Name, GenericArguments);
+		return HashCode.Combine(Name, NodeUtils.GetArrayHash(GenericArguments));
 	}
 }

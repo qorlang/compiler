@@ -18,6 +18,6 @@ public class ArgDeclarationNode(
 
 	public override int GetHashCode()
 	{
-		return HashCode.Combine(Name, DataType, Protections);
+		return HashCode.Combine(Name, DataType, NodeUtils.GetArrayHash(Protections));
 	}
 }
