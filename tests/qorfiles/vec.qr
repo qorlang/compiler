@@ -5,47 +5,48 @@ pub type Vec<T>
 	field length: i32 {
 		pub [ro],
 		[rw]
-	} = 0;
+	};
 
-	field capacity: i32 [rw];
-	field data: T[] [rw];
+	field capacity: i32 $[rw];
+	field data: T[] $[rw];
 	
 	pub @ctor(size: i32)
 	{
-		data = Core.Array.Alloc<T>(size);
-		capacity = data.length;
+		this.length = 0;
+		this.data = Core.Array.Alloc<T>(size);
+		this.capacity = data.length;
 	}
 
 	pub @geti(idx: i32) : T
 	{
-		return data[idx];
+		return this.data[idx];
 	}
 
 	pub @seti(idx: i32, value: T) [rw]
 	{
-		data[idx] = value;
+		this.data[idx] = value;
 	}
 
 	pub push(value: T) [rw]
 	{
-		if (length == capacity)
+		if (this.length == this.capacity)
 		{
-			let new_capacity = capacity + 10; // yeah just arbitrary for the example
+			let new_capacity = this.capacity + 10; // yeah just arbitrary for the example
 
 			let new_data: [rw] = Core.Array.alloc<T>(new_capacity); // the old data array gets deleted by the GC at some point if all references are lost
 			
 			// copy data into new_data and assign, etc...
 
-			data = new_data;
+			this.data = new_data;
 		}
 
-		data[length] = value;
+		this.data[this.length] = value;
 
-		length++;
+		this.length++;
 	}
 
 	pub getref(idx: i32) : T&
 	{
-		return &data[idx]; // illegal: cannot take address of array element (simplifies gc search and also why would you ever need to do this? just use a Core.Array.ArrayView<T>)
+		return &this.data[idx]; // illegal: cannot take address of array element (simplifies gc search and also why would you ever need to do this? just use a Core.Array.ArrayView<T>)
 	}
 }

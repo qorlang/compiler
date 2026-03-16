@@ -1,11 +1,11 @@
 namespace QorLang.Compiler.Parser.Nodes;
 
-public class TypeDefinitionNode(string name, AccessLevel accessLevel, string[] typeParameters) : ASTNode
+public class TypeDefinitionNode(string name, AccessLevel accessLevel, string[] typeParameters, TypeMemberDeclarationNode[] memberDeclarations) : ASTNode
 {
 	public readonly string Name = name;
 	public readonly AccessLevel AccessLevel = accessLevel;
 	public readonly string[] TypeParameters = typeParameters;
-	public readonly List<TypeLevelDeclarationNode> Declarations = [];
+	public readonly TypeMemberDeclarationNode[] MemberDeclarations = memberDeclarations;
 
 	public override bool Equals(object? obj)
 	{
@@ -13,11 +13,11 @@ public class TypeDefinitionNode(string name, AccessLevel accessLevel, string[] t
 		return Name == other.Name &&
 			AccessLevel == other.AccessLevel &&
 			TypeParameters.SequenceEqual(other.TypeParameters) &&
-			Declarations.SequenceEqual(other.Declarations);
+			MemberDeclarations.SequenceEqual(other.MemberDeclarations);
 	}
 
 	public override int GetHashCode()
 	{
-		return HashCode.Combine(Name, AccessLevel, NodeUtils.GetArrayHash(TypeParameters), Declarations);
+		return HashCode.Combine(Name, AccessLevel, NodeUtils.GetArrayHash(TypeParameters), NodeUtils.GetArrayHash(MemberDeclarations));
 	}
 }

@@ -14,6 +14,7 @@ public readonly struct Token(TokenType type, string value, TokenLocation positio
 
 public enum TokenType
 {
+	ErrorToken, // ErrorToken is first so that default(Token)/default(TokenType) always has a type of ErrorToken
 	Identifier,
 	Keyword,
 	IntegerLiteral,
@@ -65,6 +66,5 @@ public enum TokenType
 	Dot,
 	LineComment,
 	BlockComment,
-	ErrorToken,
 	EOF
 }

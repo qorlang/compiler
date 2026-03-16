@@ -283,7 +283,7 @@ public class DefaultLexer(string fileName, string source)
 					_currCol++;
 					continue;
 				}
-				else if (char.IsLetter(c) || c == '_' || c == '@')
+				else if (char.IsLetter(c) || c == '_' || (c == '@' && _currCol + 1 < _currLine.Length && (char.IsLetter(_currLine[_currCol + 1]) || _currLine[_currCol + 1] == '_')))
 				{
 					yield return MakeIdentifierOrKeyword();
 

@@ -4,7 +4,7 @@ public class FieldDeclarationNode(
 	string name,
 	TypeReferenceNode dataType,
 	Dictionary<AccessLevel, DataProtection[]> protections
-) : TypeLevelDeclarationNode
+) : TypeMemberDeclarationNode
 {
 	public readonly string Name = name;
 	public readonly TypeReferenceNode DataType = dataType;
