@@ -331,7 +331,7 @@ public class DefaultLexer(string fileName, string source)
 					if (_currCol < _currLine.Length)
 					{
 						string twoCharOp = opOrPunctuation + _currLine[_currCol];
-						if ((new[] { "==", "!=", "<=", ">=", "&&", "||", "++", "--", "+=", "-=", "*=", "/=", "%=", "<<", ">>", "**" }).Contains(twoCharOp))
+						if ((new[] { "==", "!=", "<=", ">=", "||", "++", "--", "+=", "-=", "*=", "/=", "%=", "<<" }).Contains(twoCharOp))
 						{
 							opOrPunctuation = twoCharOp;
 							_currCol++;
@@ -344,7 +344,6 @@ public class DefaultLexer(string fileName, string source)
 						"-" => TokenType.Sub,
 						"*" => TokenType.Asterisk,
 						"/" => TokenType.Div,
-						"**" => TokenType.Power,
 						"=" => TokenType.Assign,
 						"==" => TokenType.Eq,
 						"!=" => TokenType.NotEq,
@@ -353,7 +352,6 @@ public class DefaultLexer(string fileName, string source)
 						"<=" => TokenType.LessThanEqual,
 						">=" => TokenType.GreaterThanEqual,
 						"%" => TokenType.Mod,
-						"&&" => TokenType.And,
 						"||" => TokenType.Or,
 						"!" => TokenType.Not,
 						"^" => TokenType.BitwiseXor,
@@ -368,7 +366,6 @@ public class DefaultLexer(string fileName, string source)
 						"++" => TokenType.Increment,
 						"--" => TokenType.Decrement,
 						"<<" => TokenType.LeftShift,
-						">>" => TokenType.RightShift,
 						"(" => TokenType.LeftParen,
 						")" => TokenType.RightParen,
 						"{" => TokenType.LeftBrace,

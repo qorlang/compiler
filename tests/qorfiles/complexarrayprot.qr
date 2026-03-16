@@ -1,0 +1,26 @@
+: State[] $[rws]
+- Modifier applies to var (array can be reassigned) and array elements (array elements can be modified)
+
+: State&[] $[*rw]
+- Modifier applies to the `State` objects whose references are stored in the array
+ - The array cannot be reassigned, the array elements (refererence pointers) cannot be reassigned
+ - The objects pointed to by the array elements can be modified
+
+: State[]& $[*rw]
+- Modifier applies to the array referenced by the `State[]&` pointer (the State[] array)
+ - This is equivalent to a pointer to the object in the first example
+
+: State&[]& $[*rw]
+- Modifier applies to the referenced `State&[]` array.
+ - Equivalent to the above example except the referenced array is of type `State&[]` and not `State[]`
+
+: State&[]& $[**rw]
+- Dereferences on modifiers "fall through" any arrays, so this applies the modifier to the `State` objects referenced by the array elements
+
+: State[][] $[rw]
+- Array dimensions cannot be individually protected so this is the same as the first example, just with a 2d array
+
+: State&[]&[]& $[**rw]
+- This is a "pointer to array of pointer to array of pointer to State"
+- Again, modifier dereferences "fall through" any arrays so this dereferences two of the "pointer to" above
+ - This results in rw access on the `State&[]` parts of this data

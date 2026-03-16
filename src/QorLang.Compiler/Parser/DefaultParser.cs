@@ -195,6 +195,29 @@ public class DefaultParser(IEnumerable<Token> tokens)
 		{
 			var nextToken = GetNextToken();
 
+			int refLevel = 0;
+
+			while (nextToken.Type == TokenType.Asterisk)
+			{
+				refLevel++;
+
+				nextToken = GetNextToken();
+			}
+
+			if (refLevel > maxRefLevel)
+			{
+				_errors.Add(GenerateError($"Error QR213: Too many reference levels specified in data protection list. The associated type only has {maxRefLevel} reference levels.", nextToken));
+
+				return null;
+			}
+
+			if (setProtections[refLevel])
+			{
+				_errors.Add(GenerateError($"Error QR214: Duplicate protection modifier set for reference level {refLevel}.", nextToken));
+
+				return null;
+			}
+
 			if (nextToken.Type != TokenType.Keyword)
 			{
 				_errors.Add(GenerateError($"Error QR202: Expected protection modifier in data protection list, but got {TokenRepr.ToString(nextToken)} instead.", nextToken));
@@ -204,35 +227,10 @@ public class DefaultParser(IEnumerable<Token> tokens)
 
 			if (nextToken.Value == "rw")
 			{
-				int refLevel = 0;
-
-				var ampToken = GetNextToken();
-
-				while (ampToken.Type == TokenType.Ampersand)
-				{
-					refLevel++;
-
-					ampToken = GetNextToken();
-				}
-
-				if (refLevel > maxRefLevel)
-				{
-					_errors.Add(GenerateError($"Error QR213: Too many reference levels specified in data protection list. The associated type only has {maxRefLevel} reference levels.", nextToken));
-
-					return null;
-				}
-
-				if (setProtections[refLevel])
-				{
-					_errors.Add(GenerateError($"Error QR214: Duplicate protection modifier set for reference level {refLevel}.", nextToken));
-
-					return null;
-				}
-
 				protections[refLevel] = DataProtection.ReadWrite;
 				setProtections[refLevel] = true;
 
-				var tokenAfterProtDef = ampToken; // this one is actually not an ampersand token, but the next token after which failed the ampersand check in the while loop
+				var tokenAfterProtDef = GetNextToken();
 
 				if (tokenAfterProtDef.Type == TokenType.Comma)
 				{
@@ -258,35 +256,10 @@ public class DefaultParser(IEnumerable<Token> tokens)
 					return null;
 				}
 
-				int refLevel = 0;
-
-				var ampToken = GetNextToken();
-
-				while (ampToken.Type == TokenType.Ampersand)
-				{
-					refLevel++;
-
-					ampToken = GetNextToken();
-				}
-
-				if (refLevel > maxRefLevel)
-				{
-					_errors.Add(GenerateError($"Error QR213: Too many reference levels specified in data protection list. The associated type only has {maxRefLevel} reference levels.", nextToken));
-
-					return null;
-				}
-
-				if (setProtections[refLevel])
-				{
-					_errors.Add(GenerateError($"Error QR214: Duplicate protection modifier set for reference level {refLevel}.", nextToken));
-
-					return null;
-				}
-
 				protections[refLevel] = DataProtection.ReadOnly;
 				setProtections[refLevel] = true;
 
-				var tokenAfterProtDef = ampToken; // this one is actually not an ampersand token, but the next token after which failed the ampersand check in the while loop
+				var tokenAfterProtDef = GetNextToken();
 
 				if (tokenAfterProtDef.Type == TokenType.Comma)
 				{
@@ -409,8 +382,6 @@ public class DefaultParser(IEnumerable<Token> tokens)
 
 		string typeName;
 		List<TypeReferenceNode> genericArgs = [];
-		int arrayLevel = 0;
-		int refLevel = 0;
 		Token currToken;
 
 
@@ -451,7 +422,7 @@ public class DefaultParser(IEnumerable<Token> tokens)
 			}
 
 			currToken = GetNextToken();
-
+			
 			goto AfterTypeResolved;
 		}
 		else
@@ -506,30 +477,29 @@ public class DefaultParser(IEnumerable<Token> tokens)
 
 		AfterTypeResolved:
 
-		while (currToken.Type == TokenType.Ampersand)
+		List<IndirectionLayer> indirectionLayers = [];
+
+		while (true)
 		{
-			refLevel++;
+			if (currToken.Type == TokenType.Ampersand)
+			{
+				indirectionLayers.Add(IndirectionLayer.PointerTo);
+			}
+			else if (currToken.Type == TokenType.LeftBracket)
+			{
+				indirectionLayers.Add(IndirectionLayer.ArrayOf);
+				
+				if (!ExpectNextToken(TokenType.RightBracket)) return (ErrorOutOfCurrentContext(), default);
+			}
+			else
+			{
+				break; 
+			}
 
 			currToken = GetNextToken();
 		}
 
-		while (currToken.Type == TokenType.LeftBracket)
-		{
-			arrayLevel++;
-
-			if (!ExpectNextToken(TokenType.RightBracket)) return (ErrorOutOfCurrentContext(), default);
-
-			currToken = GetNextToken();
-		}
-
-		if (currToken.Type == TokenType.Ampersand) // specialized error case
-		{
-			_errors.Add(GenerateError($"Error QR211: Cannot hold a reference to an array type. Consider holding the array object itself instead.", currToken));
-
-			return (ErrorOutOfCurrentContext(), default);
-		}
-
-		return (new TypeReferenceNode(typeName, refLevel, arrayLevel, [..genericArgs]), currToken);
+		return (new TypeReferenceNode(typeName, [..indirectionLayers], [..genericArgs]), currToken);
 	}
 
 	/// <summary>
@@ -904,7 +874,7 @@ public class DefaultParser(IEnumerable<Token> tokens)
 		if (lastUnprocessedToken.Type == TokenType.Dollar)
 		{
 			if (!ExpectNextToken(TokenType.LeftBracket)) return ErrorOutOfCurrentContext();
-			
+
 			var simpleProts = ParseSimpleProtectionList(typeNode.RefLevel);
 
 			if (simpleProts is null) return ErrorOutOfCurrentContext();

@@ -1,11 +1,11 @@
-func_ref_rwall(person: Person& [rw, rw&])
+func_ref_rwall(person: Person& [rw, *rw])
 {
 	// we may only pass `Person [rw]` instances to this function
 	// the [rw] decl indicates we can assign a new pointer to `person`
-	// the [rw&] decl indicates we can write to the memory referenced by the `person` pointer
-	// because of the presence of the [rw&] and [rw] together, another restriction is added:
-	// we may not assign the address of a `Person [ro]` (`Person& [ro&]`) to `person` in this context
+	// the [*rw] decl indicates we can write to the memory referenced by the `person` pointer
+	// because of the presence of the [*rw] and [rw] together, another restriction is added:
+	// we may not assign the address of a `Person [ro]` (`Person& [*ro]`) to `person` in this context
 	// this is because `person` is declared with [rw] protection on the referenced memory and assigning
 	// the address of memory with [ro] protections would violate mutability constraints through the pointer.
-	// However, any `Person& [rw&]` pointers may be assigned to `person` in this context.
+	// However, any `Person& [*rw]` pointers may be assigned to `person` in this context.
 }

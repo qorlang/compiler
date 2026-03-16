@@ -555,7 +555,7 @@ public class TopLevelStatements
 		Assert.Empty(errors);
 		var funcNode = nodes.First() as FunctionDefinitionNode;
 		Assert.NotNull(funcNode);
-		Assert.Equal(1, funcNode.ReturnType.ArrayLevel);
+		Assert.Single(funcNode.ReturnType.IndirectionLayers, IndirectionLayer.ArrayOf);
 	}
 
 	[Fact]
@@ -573,14 +573,19 @@ public class TopLevelStatements
 		Assert.Empty(errors);
 		var funcNode = nodes.First() as FunctionDefinitionNode;
 		Assert.NotNull(funcNode);
-		Assert.Equal(2, funcNode.ReturnType.ArrayLevel);
+		Assert.True(
+			funcNode.ReturnType.IndirectionLayers.SequenceEqual([
+				IndirectionLayer.ArrayOf, IndirectionLayer.ArrayOf
+			])
+		);
 	}
 
 	[Fact]
-	public void Parse_ReferenceToArrayType_ReturnsError()
+	public void Parse_ComplexIndirectionLevel_ReturnsCorrectIndirections()
 	{
+		// the parameter is an "array of pointer to array of pointer to pointer to i32", read-write everywhere
 		string code = """
-		test(arr: i32[]&)
+		test(arr: i32&&[]&[] $[rw, *rw, **rw, ***rw])
 		{
 
 		}
@@ -588,8 +593,19 @@ public class TopLevelStatements
 
 		var (nodes, errors) = TestHelper.ParseCode(code);
 
-		Assert.Single(errors);
-		Assert.Contains("QR211", errors.First().Message);
+		Assert.Empty(errors);
+
+		var funcNode = nodes.First() as FunctionDefinitionNode;
+		Assert.NotNull(funcNode);
+		Assert.True(
+			funcNode.Parameters[0].DataType.IndirectionLayers.SequenceEqual([
+				IndirectionLayer.PointerTo, IndirectionLayer.PointerTo,
+				IndirectionLayer.ArrayOf, IndirectionLayer.PointerTo,
+				IndirectionLayer.ArrayOf
+			])
+		);
+
+		Assert.All(funcNode.Parameters[0].Protections, prot => Assert.Equal(DataProtection.ReadWrite, prot));
 	}
 
 	[Fact]
@@ -715,8 +731,8 @@ public class TopLevelStatements
 	{
 		string code = """
 		global state: State& {
-			pub [ro, ro&],
-			[rw, rw&]
+			pub [ro, *ro],
+			[rw, *rw]
 		};
 		""";
 
@@ -773,8 +789,8 @@ public class TopLevelStatements
 	{
 		string code = """
 		pub global state: State& {
-			pub [ro, ro&],
-			[rw, rw&]
+			pub [ro, *ro],
+			[rw, *rw]
 		};
 		""";
 
@@ -789,8 +805,8 @@ public class TopLevelStatements
 	{
 		string code = """
 		global state: State& {
-			pub [ro, ro&],
-			[rw, rw&]
+			pub [ro, *ro],
+			[rw, *rw]
 		};
 
 		pub global other: Other $[rw];
