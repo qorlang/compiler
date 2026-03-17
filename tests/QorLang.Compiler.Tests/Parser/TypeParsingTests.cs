@@ -18,8 +18,7 @@ public class TypeParsingTests
 		Assert.Empty(errors);
 		Assert.Single(nodes);
 
-		var typeNode = nodes.First() as TypeDefinitionNode;
-		Assert.NotNull(typeNode);
+		var typeNode = Assert.IsType<TypeDefinitionNode>(nodes.First());
 		Assert.Equal("Point", typeNode.Name);
 		Assert.Equal(AccessLevel.Public, typeNode.AccessLevel);
 		Assert.Empty(typeNode.TypeParameters);
@@ -40,8 +39,7 @@ public class TypeParsingTests
 		Assert.Empty(errors);
 		Assert.Single(nodes);
 
-		var typeNode = nodes.First() as TypeDefinitionNode;
-		Assert.NotNull(typeNode);
+		var typeNode = Assert.IsType<TypeDefinitionNode>(nodes.First());
 		Assert.Equal("Vec", typeNode.Name);
 		Assert.Single(typeNode.TypeParameters);
 		Assert.Contains("T", typeNode.TypeParameters);
@@ -60,8 +58,7 @@ public class TypeParsingTests
 
 		Assert.Empty(errors);
 
-		var typeNode = nodes.First() as TypeDefinitionNode;
-		Assert.NotNull(typeNode);
+		var typeNode = Assert.IsType<TypeDefinitionNode>(nodes.First());
 		Assert.Equal(2, typeNode.TypeParameters.Length);
 		Assert.Contains("K", typeNode.TypeParameters);
 		Assert.Contains("V", typeNode.TypeParameters);
@@ -81,14 +78,11 @@ public class TypeParsingTests
 
 		Assert.Empty(errors);
 
-		var typeNode = nodes.First() as TypeDefinitionNode;
-		Assert.NotNull(typeNode);
+		var typeNode = Assert.IsType<TypeDefinitionNode>(nodes.First());
 		Assert.Single(typeNode.MemberDeclarations);
 
-		var fieldNode = typeNode.MemberDeclarations[0] as FieldDeclarationNode;
-		Assert.NotNull(fieldNode);
+		var fieldNode = Assert.IsType<FieldDeclarationNode>(typeNode.MemberDeclarations[0]);
 		Assert.Equal("x", fieldNode.Name);
-		Assert.NotNull(fieldNode.DataType);
 		Assert.Contains(AccessLevel.Private, fieldNode.Protections.Keys);
 		Assert.Equal(DataProtection.ReadWrite, fieldNode.Protections[AccessLevel.Private][0]);
 	}
@@ -107,14 +101,11 @@ public class TypeParsingTests
 
 		Assert.Empty(errors);
 
-		var typeNode = nodes.First() as TypeDefinitionNode;
-		Assert.NotNull(typeNode);
+		var typeNode = Assert.IsType<TypeDefinitionNode>(nodes.First());
 		Assert.Single(typeNode.MemberDeclarations);
 
-		var fieldNode = typeNode.MemberDeclarations[0] as FieldDeclarationNode;
-		Assert.NotNull(fieldNode);
+		var fieldNode = Assert.IsType<FieldDeclarationNode>(typeNode.MemberDeclarations[0]);
 		Assert.Equal("x", fieldNode.Name);
-		Assert.NotNull(fieldNode.DataType);
 		Assert.Contains(AccessLevel.Public, fieldNode.Protections.Keys);
 		Assert.Equal(DataProtection.ReadWrite, fieldNode.Protections[AccessLevel.Public][0]);
 	}
@@ -136,11 +127,9 @@ public class TypeParsingTests
 
 		Assert.Empty(errors);
 
-		var typeNode = nodes.First() as TypeDefinitionNode;
-		Assert.NotNull(typeNode);
+		var typeNode = Assert.IsType<TypeDefinitionNode>(nodes.First());
 
-		var fieldNode = typeNode.MemberDeclarations[0] as FieldDeclarationNode;
-		Assert.NotNull(fieldNode);
+		var fieldNode = Assert.IsType<FieldDeclarationNode>(typeNode.MemberDeclarations[0]);
 		Assert.Equal("x", fieldNode.Name);
 		Assert.NotEmpty(fieldNode.Protections);
 	}
@@ -161,20 +150,16 @@ public class TypeParsingTests
 
 		Assert.Empty(errors);
 
-		var typeNode = nodes.First() as TypeDefinitionNode;
-		Assert.NotNull(typeNode);
+		var typeNode = Assert.IsType<TypeDefinitionNode>(nodes.First());
 		Assert.Equal(3, typeNode.MemberDeclarations.Length);
 
-		var fieldX = typeNode.MemberDeclarations[0] as FieldDeclarationNode;
-		Assert.NotNull(fieldX);
+		var fieldX = Assert.IsType<FieldDeclarationNode>(typeNode.MemberDeclarations[0]);
 		Assert.Contains(AccessLevel.Public, fieldX.Protections.Keys);
 
-		var fieldY = typeNode.MemberDeclarations[1] as FieldDeclarationNode;
-		Assert.NotNull(fieldY);
+		var fieldY = Assert.IsType<FieldDeclarationNode>(typeNode.MemberDeclarations[1]);
 		Assert.Contains(AccessLevel.Private, fieldY.Protections.Keys);
 
-		var fieldZ = typeNode.MemberDeclarations[2] as FieldDeclarationNode;
-		Assert.NotNull(fieldZ);
+		var fieldZ = Assert.IsType<FieldDeclarationNode>(typeNode.MemberDeclarations[2]);
 		Assert.Contains(AccessLevel.Public, fieldZ.Protections.Keys);
 	}
 
@@ -194,8 +179,7 @@ public class TypeParsingTests
 
 		Assert.Empty(errors);
 
-		var typeNode = nodes.First() as TypeDefinitionNode;
-		Assert.NotNull(typeNode);
+		var typeNode = Assert.IsType<TypeDefinitionNode>(nodes.First());
 		Assert.Equal(3, typeNode.MemberDeclarations.Length);
 
 		var fields = typeNode.MemberDeclarations.Cast<FieldDeclarationNode>().ToList();
@@ -222,12 +206,10 @@ public class TypeParsingTests
 
 		Assert.Empty(errors);
 
-		var typeNode = nodes.First() as TypeDefinitionNode;
-		Assert.NotNull(typeNode);
+		var typeNode = Assert.IsType<TypeDefinitionNode>(nodes.First());
 		Assert.Single(typeNode.MemberDeclarations);
 
-		var methodNode = typeNode.MemberDeclarations[0] as MethodDefinitionNode;
-		Assert.NotNull(methodNode);
+		var methodNode = Assert.IsType<MethodDefinitionNode>(typeNode.MemberDeclarations[0]);
 		Assert.Equal("add", methodNode.Name);
 		Assert.Equal(AccessLevel.Public, methodNode.AccessLevel);
 		Assert.Equal(2, methodNode.Parameters.Length);
@@ -249,11 +231,9 @@ public class TypeParsingTests
 
 		Assert.Empty(errors);
 
-		var typeNode = nodes.First() as TypeDefinitionNode;
-		Assert.NotNull(typeNode);
+		var typeNode = Assert.IsType<TypeDefinitionNode>(nodes.First());
 
-		var methodNode = typeNode.MemberDeclarations[0] as MethodDefinitionNode;
-		Assert.NotNull(methodNode);
+		var methodNode = Assert.IsType<MethodDefinitionNode>(typeNode.MemberDeclarations[0]);
 		Assert.Single(methodNode.TypeParameters);
 		Assert.Contains("T", methodNode.TypeParameters);
 	}
@@ -274,11 +254,9 @@ public class TypeParsingTests
 
 		Assert.Empty(errors);
 
-		var typeNode = nodes.First() as TypeDefinitionNode;
-		Assert.NotNull(typeNode);
+		var typeNode = Assert.IsType<TypeDefinitionNode>(nodes.First());
 
-		var methodNode = typeNode.MemberDeclarations[0] as MethodDefinitionNode;
-		Assert.NotNull(methodNode);
+		var methodNode = Assert.IsType<MethodDefinitionNode>(typeNode.MemberDeclarations[0]);
 		Assert.Equal(3, methodNode.Parameters.Length);
 	}
 
@@ -305,8 +283,7 @@ public class TypeParsingTests
 
 		Assert.Empty(errors);
 
-		var typeNode = nodes.First() as TypeDefinitionNode;
-		Assert.NotNull(typeNode);
+		var typeNode = Assert.IsType<TypeDefinitionNode>(nodes.First());
 		Assert.Equal(4, typeNode.MemberDeclarations.Length);
 
 		Assert.Equal(2, typeNode.MemberDeclarations.OfType<FieldDeclarationNode>().Count());
@@ -326,8 +303,7 @@ public class TypeParsingTests
 
 		Assert.Empty(errors);
 
-		var typeNode = nodes.First() as TypeDefinitionNode;
-		Assert.NotNull(typeNode);
+		var typeNode = Assert.IsType<TypeDefinitionNode>(nodes.First());
 		Assert.Equal(AccessLevel.Private, typeNode.AccessLevel);
 	}
 
@@ -347,11 +323,9 @@ public class TypeParsingTests
 
 		Assert.Empty(errors);
 
-		var typeNode = nodes.First() as TypeDefinitionNode;
-		Assert.NotNull(typeNode);
+		var typeNode = Assert.IsType<TypeDefinitionNode>(nodes.First());
 
-		var methodNode = typeNode.MemberDeclarations[0] as MethodDefinitionNode;
-		Assert.NotNull(methodNode);
+		var methodNode = Assert.IsType<MethodDefinitionNode>(typeNode.MemberDeclarations[0]);
 		Assert.Equal(AccessLevel.Private, methodNode.AccessLevel);
 	}
 
@@ -371,11 +345,9 @@ public class TypeParsingTests
 
 		Assert.Empty(errors);
 
-		var typeNode = nodes.First() as TypeDefinitionNode;
-		Assert.NotNull(typeNode);
+		var typeNode = Assert.IsType<TypeDefinitionNode>(nodes.First());
 
-		var methodNode = typeNode.MemberDeclarations[0] as MethodDefinitionNode;
-		Assert.NotNull(methodNode);
+		var methodNode = Assert.IsType<MethodDefinitionNode>(typeNode.MemberDeclarations[0]);
 		Assert.Equal("initialize", methodNode.Name);
 	}
 
@@ -397,12 +369,10 @@ public class TypeParsingTests
 
 		Assert.Empty(errors);
 
-		var typeNode = nodes.First() as TypeDefinitionNode;
-		Assert.NotNull(typeNode);
+		var typeNode = Assert.IsType<TypeDefinitionNode>(nodes.First());
 		Assert.Single(typeNode.TypeParameters);
 
-		var methodNode = typeNode.MemberDeclarations[1] as MethodDefinitionNode;
-		Assert.NotNull(methodNode);
+		var methodNode = Assert.IsType<MethodDefinitionNode>(typeNode.MemberDeclarations[1]);
 		Assert.Single(methodNode.TypeParameters);
 	}
 
@@ -422,11 +392,9 @@ public class TypeParsingTests
 
 		Assert.Empty(errors);
 
-		var typeNode = nodes.First() as TypeDefinitionNode;
-		Assert.NotNull(typeNode);
+		var typeNode = Assert.IsType<TypeDefinitionNode>(nodes.First());
 
-		var methodNode = typeNode.MemberDeclarations[0] as MethodDefinitionNode;
-		Assert.NotNull(methodNode);
+		var methodNode = Assert.IsType<MethodDefinitionNode>(typeNode.MemberDeclarations[0]);
 	}
 
 	[Fact]
@@ -445,11 +413,9 @@ public class TypeParsingTests
 
 		Assert.Empty(errors);
 
-		var typeNode = nodes.First() as TypeDefinitionNode;
-		Assert.NotNull(typeNode);
+		var typeNode = Assert.IsType<TypeDefinitionNode>(nodes.First());
 
-		var methodNode = typeNode.MemberDeclarations[0] as MethodDefinitionNode;
-		Assert.NotNull(methodNode);
+		var methodNode = Assert.IsType<MethodDefinitionNode>(typeNode.MemberDeclarations[0]);
 		Assert.Equal("@ctor", methodNode.Name);
 	}
 
@@ -473,16 +439,13 @@ public class TypeParsingTests
 
 		Assert.Empty(errors);
 
-		var typeNode = nodes.First() as TypeDefinitionNode;
-		Assert.NotNull(typeNode);
+		var typeNode = Assert.IsType<TypeDefinitionNode>(nodes.First());
 		Assert.Equal(2, typeNode.MemberDeclarations.Length);
 
-		var getterNode = typeNode.MemberDeclarations[0] as MethodDefinitionNode;
-		Assert.NotNull(getterNode);
+		var getterNode = Assert.IsType<MethodDefinitionNode>(typeNode.MemberDeclarations[0]);
 		Assert.Equal("@geti", getterNode.Name);
 
-		var setterNode = typeNode.MemberDeclarations[1] as MethodDefinitionNode;
-		Assert.NotNull(setterNode);
+		var setterNode = Assert.IsType<MethodDefinitionNode>(typeNode.MemberDeclarations[1]);
 		Assert.Equal("@seti", setterNode.Name);
 	}
 }

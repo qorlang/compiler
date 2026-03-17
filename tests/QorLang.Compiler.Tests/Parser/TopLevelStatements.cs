@@ -179,8 +179,7 @@ public class TopLevelStatements
 		Assert.Empty(errors);
 		Assert.Single(nodes);
 
-		var funcNode = nodes.First() as FunctionDefinitionNode;
-		Assert.NotNull(funcNode);
+		var funcNode = Assert.IsType<FunctionDefinitionNode>(nodes.First());
 		Assert.Equal("main", funcNode.Name);
 		Assert.Equal(AccessLevel.Private, funcNode.AccessLevel);
 		Assert.Empty(funcNode.Parameters);
@@ -204,8 +203,7 @@ public class TopLevelStatements
 		Assert.Empty(errors);
 		Assert.Single(nodes);
 
-		var funcNode = nodes.First() as FunctionDefinitionNode;
-		Assert.NotNull(funcNode);
+		var funcNode = Assert.IsType<FunctionDefinitionNode>(nodes.First());
 		Assert.Equal(AccessLevel.Public, funcNode.AccessLevel);
 	}
 
@@ -222,8 +220,7 @@ public class TopLevelStatements
 		var (nodes, errors) = TestHelper.ParseCode(code);
 
 		Assert.Empty(errors);
-		var funcNode = nodes.First() as FunctionDefinitionNode;
-		Assert.NotNull(funcNode);
+		var funcNode = Assert.IsType<FunctionDefinitionNode>(nodes.First());
 		Assert.Equal("Qor.Int32", funcNode.ReturnType.TypeName);
 	}
 
@@ -240,8 +237,7 @@ public class TopLevelStatements
 		var (nodes, errors) = TestHelper.ParseCode(code);
 
 		Assert.Empty(errors);
-		var funcNode = nodes.First() as FunctionDefinitionNode;
-		Assert.NotNull(funcNode);
+		var funcNode = Assert.IsType<FunctionDefinitionNode>(nodes.First());
 		Assert.Equal(2, funcNode.Parameters.Length);
 		Assert.Equal("a", funcNode.Parameters[0].Name);
 		Assert.Equal("b", funcNode.Parameters[1].Name);
@@ -260,8 +256,7 @@ public class TopLevelStatements
 		var (nodes, errors) = TestHelper.ParseCode(code);
 
 		Assert.Empty(errors);
-		var funcNode = nodes.First() as FunctionDefinitionNode;
-		Assert.NotNull(funcNode);
+		var funcNode = Assert.IsType<FunctionDefinitionNode>(nodes.First());
 		Assert.Single(funcNode.TypeParameters);
 		Assert.Equal("T", funcNode.TypeParameters[0]);
 	}
@@ -278,8 +273,7 @@ public class TopLevelStatements
 		var (nodes, errors) = TestHelper.ParseCode(code);
 
 		Assert.Empty(errors);
-		var funcNode = nodes.First() as FunctionDefinitionNode;
-		Assert.NotNull(funcNode);
+		var funcNode = Assert.IsType<FunctionDefinitionNode>(nodes.First());
 		Assert.Equal(2, funcNode.TypeParameters.Length);
 		Assert.Equal("K", funcNode.TypeParameters[0]);
 		Assert.Equal("V", funcNode.TypeParameters[1]);
@@ -297,8 +291,7 @@ public class TopLevelStatements
 		var (nodes, errors) = TestHelper.ParseCode(code);
 
 		Assert.Empty(errors);
-		var funcNode = nodes.First() as FunctionDefinitionNode;
-		Assert.NotNull(funcNode);
+		var funcNode = Assert.IsType<FunctionDefinitionNode>(nodes.First());
 		Assert.True(funcNode.ReturnType.IsVoid);
 	}
 
@@ -372,8 +365,7 @@ public class TopLevelStatements
 		var (nodes, errors) = TestHelper.ParseCode(code);
 
 		Assert.Empty(errors);
-		var funcNode = nodes.First() as FunctionDefinitionNode;
-		Assert.NotNull(funcNode);
+		var funcNode = Assert.IsType<FunctionDefinitionNode>(nodes.First());
 		Assert.Single(funcNode.Body);
 	}
 
@@ -450,8 +442,7 @@ public class TopLevelStatements
 		var (nodes, errors) = TestHelper.ParseCode(code);
 
 		Assert.Empty(errors);
-		var funcNode = nodes.First() as FunctionDefinitionNode;
-		Assert.NotNull(funcNode);
+		var funcNode = Assert.IsType<FunctionDefinitionNode>(nodes.First());
 		Assert.Equal(typeName switch {
 			"i8" => "Qor.Int8",
 			"i16" => "Qor.Int16",
@@ -481,8 +472,7 @@ public class TopLevelStatements
 		var (nodes, errors) = TestHelper.ParseCode(code);
 
 		Assert.Empty(errors);
-		var funcNode = nodes.First() as FunctionDefinitionNode;
-		Assert.NotNull(funcNode);
+		var funcNode = Assert.IsType<FunctionDefinitionNode>(nodes.First());
 		Assert.Equal("MyType", funcNode.ReturnType.TypeName);
 	}
 
@@ -498,8 +488,7 @@ public class TopLevelStatements
 		var (nodes, errors) = TestHelper.ParseCode(code);
 
 		Assert.Empty(errors);
-		var funcNode = nodes.First() as FunctionDefinitionNode;
-		Assert.NotNull(funcNode);
+		var funcNode = Assert.IsType<FunctionDefinitionNode>(nodes.First());
 		Assert.Equal("Qor.Collections.List", funcNode.ReturnType.TypeName);
 	}
 
@@ -516,8 +505,7 @@ public class TopLevelStatements
 		var (nodes, errors) = TestHelper.ParseCode(code);
 
 		Assert.Empty(errors);
-		var funcNode = nodes.First() as FunctionDefinitionNode;
-		Assert.NotNull(funcNode);
+		var funcNode = Assert.IsType<FunctionDefinitionNode>(nodes.First());
 		Assert.Equal("List", funcNode.ReturnType.TypeName);
 		Assert.Single(funcNode.ReturnType.TypeArguments);
 	}
@@ -535,8 +523,7 @@ public class TopLevelStatements
 		var (nodes, errors) = TestHelper.ParseCode(code);
 
 		Assert.Empty(errors);
-		var funcNode = nodes.First() as FunctionDefinitionNode;
-		Assert.NotNull(funcNode);
+		var funcNode = Assert.IsType<FunctionDefinitionNode>(nodes.First());
 		Assert.Equal(1, funcNode.ReturnType.RefLevel);
 	}
 
@@ -553,8 +540,7 @@ public class TopLevelStatements
 		var (nodes, errors) = TestHelper.ParseCode(code);
 
 		Assert.Empty(errors);
-		var funcNode = nodes.First() as FunctionDefinitionNode;
-		Assert.NotNull(funcNode);
+		var funcNode = Assert.IsType<FunctionDefinitionNode>(nodes.First());
 		Assert.Single(funcNode.ReturnType.IndirectionLayers, IndirectionLayer.ArrayOf);
 	}
 
@@ -571,8 +557,7 @@ public class TopLevelStatements
 		var (nodes, errors) = TestHelper.ParseCode(code);
 
 		Assert.Empty(errors);
-		var funcNode = nodes.First() as FunctionDefinitionNode;
-		Assert.NotNull(funcNode);
+		var funcNode = Assert.IsType<FunctionDefinitionNode>(nodes.First());
 		Assert.True(
 			funcNode.ReturnType.IndirectionLayers.SequenceEqual([
 				IndirectionLayer.ArrayOf, IndirectionLayer.ArrayOf
@@ -595,8 +580,7 @@ public class TopLevelStatements
 
 		Assert.Empty(errors);
 
-		var funcNode = nodes.First() as FunctionDefinitionNode;
-		Assert.NotNull(funcNode);
+		var funcNode = Assert.IsType<FunctionDefinitionNode>(nodes.First());
 		Assert.True(
 			funcNode.Parameters[0].DataType.IndirectionLayers.SequenceEqual([
 				IndirectionLayer.PointerTo, IndirectionLayer.PointerTo,
@@ -665,8 +649,7 @@ public class TopLevelStatements
 		Assert.Empty(errors);
 		Assert.Single(nodes);
 
-		var typeNode = nodes.First() as TypeDefinitionNode;
-		Assert.NotNull(typeNode);
+		var typeNode = Assert.IsType<TypeDefinitionNode>(nodes.First());
 		Assert.Equal(AccessLevel.Public, typeNode.AccessLevel);
 	}
 
@@ -682,8 +665,7 @@ public class TopLevelStatements
 		Assert.Empty(errors);
 		Assert.Single(nodes);
 
-		var globalNode = nodes.First() as GlobalDeclarationNode;
-		Assert.NotNull(globalNode);
+		var globalNode = Assert.IsType<GlobalDeclarationNode>(nodes.First());
 		Assert.True(globalNode.Protections.ContainsKey(AccessLevel.Public));
 	}
 
@@ -700,8 +682,7 @@ public class TopLevelStatements
 		Assert.Empty(errors);
 		Assert.Single(nodes);
 
-		var globalNode = nodes.First() as GlobalDeclarationNode;
-		Assert.NotNull(globalNode);
+		var globalNode = Assert.IsType<GlobalDeclarationNode>(nodes.First());
 		Assert.Equal("other", globalNode.Name);
 		
 		Assert.True(globalNode.Protections.ContainsKey(AccessLevel.Public));
@@ -741,8 +722,7 @@ public class TopLevelStatements
 		Assert.Empty(errors);
 		Assert.Single(nodes);
 
-		var globalNode = nodes.First() as GlobalDeclarationNode;
-		Assert.NotNull(globalNode);
+		var globalNode = Assert.IsType<GlobalDeclarationNode>(nodes.First());
 		Assert.Equal("state", globalNode.Name);
 		
 		// Type has one reference level (State&), so protections array should have length 2
@@ -771,8 +751,7 @@ public class TopLevelStatements
 		var (nodes, errors) = TestHelper.ParseCode(code);
 
 		Assert.Empty(errors);
-		var globalNode = nodes.First() as GlobalDeclarationNode;
-		Assert.NotNull(globalNode);
+		var globalNode = Assert.IsType<GlobalDeclarationNode>(nodes.First());
 		Assert.Equal("data", globalNode.Name);
 		
 		// Public should have ReadOnly
