@@ -1,3 +1,5 @@
+using System.Text.Json;
+
 namespace QorLang.Compiler.Parser.Nodes;
 
 public class FieldDeclarationNode(
@@ -35,4 +37,6 @@ public class FieldDeclarationNode(
 		}
 		return hash.ToHashCode();
 	}
+
+	public override string ToString() => JsonSerializer.Serialize(new { type = nameof(FieldDeclarationNode), name = Name, dataType = JsonDocument.Parse(DataType.ToString()).RootElement, protections = Protections.ToDictionary(k => k.Key.ToString(), v => v.Value.Select(p => p.ToString()).ToArray()) });
 }

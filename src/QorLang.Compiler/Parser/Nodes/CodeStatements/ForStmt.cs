@@ -1,3 +1,4 @@
+using System.Text.Json;
 using QorLang.Compiler.Parser.Nodes.Expressions;
 
 namespace QorLang.Compiler.Parser.Nodes.CodeStatements;
@@ -24,4 +25,6 @@ public class ForStmt(
 	{
 		return HashCode.Combine(IteratorName, IterableExpression, Body);
 	}
+
+	public override string ToString() => JsonSerializer.Serialize(new { type = nameof(ForStmt), iteratorName = IteratorName, iterableExpression = JsonDocument.Parse(IterableExpression.ToString()).RootElement, body = Body.Select(b => JsonDocument.Parse(b.ToString()).RootElement).ToArray() });
 }

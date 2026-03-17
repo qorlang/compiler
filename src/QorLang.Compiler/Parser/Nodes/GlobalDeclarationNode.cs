@@ -1,3 +1,4 @@
+using System.Text.Json;
 using QorLang.Compiler.Parser.Nodes.Expressions;
 
 namespace QorLang.Compiler.Parser.Nodes;
@@ -40,4 +41,6 @@ public class GlobalDeclarationNode(
 		hash.Add(Initializer);
 		return hash.ToHashCode();
 	}
+
+	public override string ToString() => JsonSerializer.Serialize(new { type = nameof(GlobalDeclarationNode), name = Name, dataType = JsonDocument.Parse(DataType.ToString()).RootElement, protections = Protections.ToDictionary(k => k.Key.ToString(), v => v.Value.Select(p => p.ToString()).ToArray()), initializer = Initializer is not null ? JsonDocument.Parse(Initializer.ToString()).RootElement : JsonSerializer.SerializeToElement<object?>(null) });
 }

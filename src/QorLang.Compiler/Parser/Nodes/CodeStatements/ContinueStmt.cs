@@ -11,4 +11,6 @@ public class ContinueStmt : CodeStmt
 	{
 		return typeof(ContinueStmt).GetHashCode();
 	}
+
+	public override string ToString() => System.Text.Json.JsonSerializer.Serialize(new { type = nameof(ContinueStmt) });
 }

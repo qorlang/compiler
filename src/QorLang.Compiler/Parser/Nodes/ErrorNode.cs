@@ -1,3 +1,5 @@
+using System.Text.Json;
+
 namespace QorLang.Compiler.Parser.Nodes;
 
 public class ErrorNode : ASTNode
@@ -11,4 +13,6 @@ public class ErrorNode : ASTNode
 	{
 		return typeof(ErrorNode).GetHashCode();
 	}
+
+	public override string ToString() => JsonSerializer.Serialize(new { type = nameof(ErrorNode) });
 }

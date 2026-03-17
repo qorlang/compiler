@@ -1,3 +1,4 @@
+using System.Text.Json;
 using QorLang.Compiler.Parser.Nodes.Expressions;
 
 namespace QorLang.Compiler.Parser.Nodes.CodeStatements;
@@ -18,4 +19,6 @@ public class ReturnStmt(
 	{
 		return Value?.GetHashCode() ?? 0;
 	}
+
+	public override string ToString() => JsonSerializer.Serialize(new { type = nameof(ReturnStmt), value = Value is not null ? JsonDocument.Parse(Value.ToString()).RootElement : JsonSerializer.SerializeToElement<object?>(null) });
 }

@@ -1,5 +1,5 @@
 // illegal, [ro] applied by default in simple syntax
-global state: State& $[ro];
+// global state: State& $[ro];
 
 // complex protection syntax (rw or ro depending on who is using (public or private))
 global state: State& {
@@ -12,7 +12,7 @@ pub global other: Other $[rw];
 
 
 // illegal, cannot mix syntaxes like this (notice the extra pub at the beginning)
-pub global state: State& {
-	pub [ro, *ro],
-	[rw, *rw]
-};
+// pub global state: State& {
+// 	pub [ro, *ro],
+// 	[rw, *rw]
+// };

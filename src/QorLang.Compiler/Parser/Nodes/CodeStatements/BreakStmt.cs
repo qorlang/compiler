@@ -11,4 +11,6 @@ public class BreakStmt : CodeStmt
 	{
 		return typeof(BreakStmt).GetHashCode();
 	}
+
+	public override string ToString() => System.Text.Json.JsonSerializer.Serialize(new { type = nameof(BreakStmt) });
 }

@@ -1,3 +1,5 @@
+using System.Text.Json;
+
 namespace QorLang.Compiler.Parser.Nodes;
 
 public class ArgDeclarationNode(
@@ -20,4 +22,6 @@ public class ArgDeclarationNode(
 	{
 		return HashCode.Combine(Name, DataType, NodeUtils.GetArrayHash(Protections));
 	}
+
+	public override string ToString() => JsonSerializer.Serialize(new { type = nameof(ArgDeclarationNode), name = Name, dataType = JsonDocument.Parse(DataType.ToString()).RootElement, protections = Protections.Select(p => p.ToString()).ToArray() });
 }

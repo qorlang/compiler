@@ -6,7 +6,7 @@ using QorLang.Compiler.Parser.Nodes.Expressions;
 
 namespace QorLang.Compiler.Parser;
 
-using ParserResult = (IEnumerable<ASTNode> Nodes, IEnumerable<CompilationError> Errors);
+using ParserResult = (List<ASTNode> Nodes, List<CompilationError> Errors);
 
 public class DefaultParser(IEnumerable<Token> tokens)
 {
@@ -23,6 +23,13 @@ public class DefaultParser(IEnumerable<Token> tokens)
 	{
 		if (_tokenEnumerator.MoveNext())
 		{
+			if (_tokenEnumerator.Current.Type == TokenType.ErrorToken)
+			{
+				_errors.Add(GenerateError(_tokenEnumerator.Current.Value, _tokenEnumerator.Current));
+
+				return GetNextToken();
+			}
+			
 			return _tokenEnumerator.Current;
 		}
 		else
@@ -1220,13 +1227,6 @@ public class DefaultParser(IEnumerable<Token> tokens)
 			{
 				lastToken = token;
 				token = GetNextToken();
-
-				if (token.Type == TokenType.ErrorToken)
-				{
-					_errors.Add(GenerateError(token.Value, token));
-
-					continue;
-				}
 
 				if (token.Type == TokenType.EOF)
 				{

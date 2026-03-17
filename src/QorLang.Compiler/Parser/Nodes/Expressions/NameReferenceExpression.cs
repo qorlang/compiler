@@ -1,3 +1,5 @@
+using System.Text.Json;
+
 namespace QorLang.Compiler.Parser.Nodes;
 
 public abstract class NameReferenceExpression(
@@ -18,4 +20,6 @@ public abstract class NameReferenceExpression(
 	{
 		return HashCode.Combine(Name, NodeUtils.GetArrayHash(GenericArguments));
 	}
+
+	public override string ToString() => JsonSerializer.Serialize(new { type = nameof(NameReferenceExpression), name = Name, genericArguments = GenericArguments.Select(g => JsonDocument.Parse(g.ToString()).RootElement).ToArray() });
 }

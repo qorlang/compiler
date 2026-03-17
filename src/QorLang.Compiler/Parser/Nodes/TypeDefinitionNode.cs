@@ -1,3 +1,5 @@
+using System.Text.Json;
+
 namespace QorLang.Compiler.Parser.Nodes;
 
 public class TypeDefinitionNode(string name, AccessLevel accessLevel, string[] typeParameters, TypeMemberDeclarationNode[] memberDeclarations) : ASTNode
@@ -20,4 +22,6 @@ public class TypeDefinitionNode(string name, AccessLevel accessLevel, string[] t
 	{
 		return HashCode.Combine(Name, AccessLevel, NodeUtils.GetArrayHash(TypeParameters), NodeUtils.GetArrayHash(MemberDeclarations));
 	}
+
+	public override string ToString() => JsonSerializer.Serialize(new { type = nameof(TypeDefinitionNode), name = Name, accessLevel = AccessLevel.ToString(), typeParameters = TypeParameters, memberDeclarations = MemberDeclarations.Select(m => JsonDocument.Parse(m.ToString()).RootElement).ToArray() });
 }

@@ -1,3 +1,5 @@
+using System.Text.Json;
+
 namespace QorLang.Compiler.Parser.Nodes;
 
 public class TypeReferenceNode(
@@ -35,4 +37,6 @@ public class TypeReferenceNode(
 	{
 		return HashCode.Combine(TypeName, IndirectionLayers, TypeArguments);
 	}
+
+	public override string ToString() => JsonSerializer.Serialize(new { type = nameof(TypeReferenceNode), typeName = TypeName, indirectionLayers = IndirectionLayers.Select(il => il.ToString()).ToArray(), typeArguments = TypeArguments });
 }

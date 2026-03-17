@@ -1,3 +1,5 @@
+using System.Text.Json;
+
 namespace QorLang.Compiler.Parser.Nodes.Expressions;
 
 public abstract class CallExpr(
@@ -18,4 +20,6 @@ public abstract class CallExpr(
 	{
 		return HashCode.Combine(Target, NodeUtils.GetArrayHash(Arguments));
 	}
+
+	public override string ToString() => JsonSerializer.Serialize(new { type = nameof(CallExpr), target = JsonDocument.Parse(Target.ToString()).RootElement, arguments = Arguments.Select(a => JsonDocument.Parse(a.ToString()).RootElement).ToArray() });
 }

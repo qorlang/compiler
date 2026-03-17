@@ -1,3 +1,5 @@
+using System.Text.Json;
+
 namespace QorLang.Compiler.Parser.Nodes;
 
 public class NamespaceNode(string name) : ASTNode
@@ -13,4 +15,6 @@ public class NamespaceNode(string name) : ASTNode
 	{
 		return Name.GetHashCode();
 	}
+
+	public override string ToString() => JsonSerializer.Serialize(new { type = nameof(NamespaceNode), name = Name });
 }

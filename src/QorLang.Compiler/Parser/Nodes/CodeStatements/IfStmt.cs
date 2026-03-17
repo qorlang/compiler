@@ -1,3 +1,4 @@
+using System.Text.Json;
 using QorLang.Compiler.Parser.Nodes.Expressions;
 
 namespace QorLang.Compiler.Parser.Nodes.CodeStatements;
@@ -29,4 +30,6 @@ public class IfStmt(
 	{
 		return HashCode.Combine(Condition, ThenBody, ElseBody);
 	}
+
+	public override string ToString() => JsonSerializer.Serialize(new { type = nameof(IfStmt), condition = JsonDocument.Parse(Condition.ToString()).RootElement, thenBody = ThenBody.Select(b => JsonDocument.Parse(b.ToString()).RootElement).ToArray(), elseBody = ElseBody.Select(b => JsonDocument.Parse(b.ToString()).RootElement).ToArray() });
 }

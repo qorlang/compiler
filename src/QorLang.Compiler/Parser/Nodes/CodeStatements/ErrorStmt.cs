@@ -11,4 +11,6 @@ public class ErrorStmt : CodeStmt
 	{
 		return typeof(ErrorStmt).GetHashCode();
 	}
+
+	public override string ToString() => System.Text.Json.JsonSerializer.Serialize(new { type = nameof(ErrorStmt) });
 }

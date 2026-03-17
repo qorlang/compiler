@@ -1,3 +1,4 @@
+using System.Text.Json;
 using QorLang.Compiler.Parser.Nodes.Expressions;
 
 namespace QorLang.Compiler.Parser.Nodes.CodeStatements;
@@ -20,4 +21,6 @@ public class AssignmentStmt(
 	{
 		return HashCode.Combine(Name, Value);
 	}
+
+	public override string ToString() => JsonSerializer.Serialize(new { type = nameof(AssignmentStmt), name = Name, value = JsonDocument.Parse(Value.ToString()).RootElement });
 }

@@ -1,0 +1,46 @@
+{
+  "nodes": [
+    {
+      "type": "GlobalDeclarationNode",
+      "name": "state",
+      "dataType": {
+        "type": "TypeReferenceNode",
+        "typeName": "State",
+        "indirectionLayers": [
+          "PointerTo"
+        ],
+        "typeArguments": []
+      },
+      "protections": {
+        "Public": [
+          "ReadOnly",
+          "ReadOnly"
+        ],
+        "Private": [
+          "ReadWrite",
+          "ReadWrite"
+        ]
+      },
+      "initializer": null
+    },
+    {
+      "type": "GlobalDeclarationNode",
+      "name": "other",
+      "dataType": {
+        "type": "TypeReferenceNode",
+        "typeName": "Other",
+        "indirectionLayers": [],
+        "typeArguments": []
+      },
+      "protections": {
+        "Public": [
+          "ReadWrite"
+        ],
+        "Private": [
+          "ReadWrite"
+        ]
+      },
+      "initializer": null
+    }
+  ]
+}

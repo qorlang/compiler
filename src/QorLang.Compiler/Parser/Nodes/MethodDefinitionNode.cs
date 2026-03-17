@@ -1,3 +1,4 @@
+using System.Text.Json;
 using QorLang.Compiler.Parser.Nodes.CodeStatements;
 
 namespace QorLang.Compiler.Parser.Nodes;
@@ -34,4 +35,6 @@ public class MethodDefinitionNode(
 	{
 		return HashCode.Combine(Name, AccessLevel, NodeUtils.GetArrayHash(Parameters), NodeUtils.GetArrayHash(TypeParameters), ReturnType, ProtectionOnSelf, NodeUtils.GetArrayHash(Body));
 	}
+
+	public override string ToString() => JsonSerializer.Serialize(new { type = nameof(MethodDefinitionNode), name = Name, accessLevel = AccessLevel.ToString(), parameters = Parameters.Select(p => JsonDocument.Parse(p.ToString()).RootElement).ToArray(), typeParameters = TypeParameters, returnType = JsonDocument.Parse(ReturnType.ToString()).RootElement, protectionOnSelf = ProtectionOnSelf.ToString(), body = Body.Select(b => JsonDocument.Parse(b.ToString()).RootElement).ToArray() });
 }

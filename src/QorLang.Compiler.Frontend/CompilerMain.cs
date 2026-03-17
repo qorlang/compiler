@@ -1,6 +1,7 @@
 ﻿using System.Text.Json;
 using CommandLine;
 using QorLang.Compiler.Lexer;
+using QorLang.Compiler.Parser;
 
 namespace QorLang.Compiler.Frontend;
 
@@ -15,8 +16,11 @@ public class CompilerOptions
 	[Option('o', "output", HelpText = "Output file path")]
 	public string? OutputFile { get; set; }
 
-	[Option('t', "tokens", HelpText = "Output tokens instead of an assembly")]
+	[Option('t', "tokens", HelpText = "Output tokens instead of an assembly", SetName = "tokens")]
 	public bool OutputTokens { get; set; }
+
+	[Option('a', "ast", HelpText = "Output AST instead of an assembly", SetName = "ast")]
+	public bool OutputAST { get; set; }
 }
 
 public class CompilerMain
@@ -50,6 +54,33 @@ public class CompilerMain
 			{
 				writer.WriteLine($"{token.Type}: {JsonSerializer.Serialize(token.Value)} at {token.Location}");
 			}
+		}
+		else if (opts.OutputAST)
+		{
+			var tokens = lexer.Tokenize();
+			var parser = new DefaultParser(tokens);
+			var (nodes, errors) = parser.ParseModule();
+
+			if (errors.Count != 0)
+			{
+				foreach (var error in errors)
+				{
+					Console.Error.WriteLine(error.ToString());
+				}
+
+				Environment.Exit(1);				
+			}
+
+			string outputFile = opts.OutputFile ?? Path.ChangeExtension(opts.SourceFile, ".ast.json");
+
+			var output = new
+			{
+				nodes = nodes.Select(n => JsonDocument.Parse(n.ToString()).RootElement)
+			};
+
+			string json = JsonSerializer.Serialize(output, new JsonSerializerOptions { WriteIndented = true });
+			
+			File.WriteAllText(outputFile, json);
 		}
 		else
 		{

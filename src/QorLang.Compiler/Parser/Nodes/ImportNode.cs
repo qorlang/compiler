@@ -1,3 +1,5 @@
+using System.Text.Json;
+
 namespace QorLang.Compiler.Parser.Nodes;
 
 public class ImportNode(string modulePath) : ASTNode
@@ -13,4 +15,6 @@ public class ImportNode(string modulePath) : ASTNode
 	{
 		return ModulePath.GetHashCode();
 	}
+
+	public override string ToString() => JsonSerializer.Serialize(new { type = nameof(ImportNode), modulePath = ModulePath });
 }
