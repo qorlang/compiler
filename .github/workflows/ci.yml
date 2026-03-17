@@ -28,8 +28,16 @@ jobs:
       - name: Test
         run: dotnet test --configuration Release --results-directory ./test-results --report-xunit-trx
 
+      - name: Report Results
+        uses: dorny/test-reporter@v2
+        if: ${{ !cancelled() }}
+        with:
+          name: xUnit Tests
+          path: ./test-results/*.trx
+          reporter: dotnet-trx
+
       - name: Upload Results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         if: always()
         with:
           name: test-results
