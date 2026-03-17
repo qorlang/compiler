@@ -2,10 +2,10 @@ using System.Text.Json;
 
 namespace QorLang.Compiler.Parser.Nodes.Expressions;
 
-public abstract class CallExpr(
+public class CallExpr(
 	Expr target,
 	Expr[] arguments
-) : ASTNode
+) : Expr
 {
 	public readonly Expr Target = target;
 	public readonly Expr[] Arguments = arguments;

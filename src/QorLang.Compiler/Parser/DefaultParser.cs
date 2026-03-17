@@ -10,7 +10,8 @@ using ParserResult = (List<ASTNode> Nodes, List<CompilationError> Errors);
 
 public class DefaultParser(IEnumerable<Token> tokens)
 {
-	IEnumerator<Token> _tokenEnumerator = tokens.GetEnumerator();
+	readonly Token[] _tokens = [..tokens];
+	int _currentTokenIndex = 0;
 	List<CompilationError> _errors = [];
 	bool _currentDeclIsPublic = false;
 
@@ -21,22 +22,29 @@ public class DefaultParser(IEnumerable<Token> tokens)
 
 	Token GetNextToken()
 	{
-		if (_tokenEnumerator.MoveNext())
+		if (_currentTokenIndex < _tokens.Length)
 		{
-			if (_tokenEnumerator.Current.Type == TokenType.ErrorToken)
+			var token = _tokens[_currentTokenIndex];
+			
+			if (token.Type == TokenType.ErrorToken)
 			{
-				_errors.Add(GenerateError(_tokenEnumerator.Current.Value, _tokenEnumerator.Current));
-
+				_errors.Add(GenerateError(token.Value, token));
+				_currentTokenIndex++;
 				return GetNextToken();
 			}
 			
-			return _tokenEnumerator.Current;
+			_currentTokenIndex++;
+			return token;
 		}
 		else
 		{
 			throw new InvalidOperationException("No more tokens available");
 		}
 	}
+
+	int SaveParserPosition() => _currentTokenIndex;
+
+	void RestoreParserPosition(int position) => _currentTokenIndex = position;
 
 	void SkipToNextStatement()
 	{
@@ -115,7 +123,7 @@ public class DefaultParser(IEnumerable<Token> tokens)
 
 		if (token.Type != TokenType.Keyword || token.Value != expectedKeyword)
 		{
-			_errors.Add(GenerateError($"Error QR203: Expected keyword '{expectedKeyword}', but got {TokenRepr.ToString(token)} instead.", token));
+			_errors.Add(GenerateError($"Error QR202: Expected keyword '{expectedKeyword}', but got {TokenRepr.ToString(token)} instead.", token));
 
 			return false;
 		}
@@ -398,7 +406,7 @@ public class DefaultParser(IEnumerable<Token> tokens)
 		return protections;
 	}
 
-	(ASTNode typeRefNode, Token lastUnprocessedToken) ParseTypeReference()
+	(ASTNode TypeRefNode, Token LastUnprocessedToken) ParseTypeReference()
 	{
 		var token = GetNextToken();
 
@@ -525,11 +533,49 @@ public class DefaultParser(IEnumerable<Token> tokens)
 	}
 
 	/// <summary>
+	/// Parses a type argument list of the form <Type, Type, ...> given that the last consumed token was the opening angle bracket.
+	/// </summary>
+	/// <returns></returns>
+	(List<TypeReferenceNode>? TypeArgs, Token NextToken) ParseTypeArgumentListInExpression()
+	{
+		var typeArgs = new List<TypeReferenceNode>();
+
+		Token nextToken;
+
+		while (true)
+		{
+			var (typeArgNode, lastUnprocessedToken) = ParseTypeReference();
+
+			if (typeArgNode is ErrorNode)
+			{
+				return (null, lastUnprocessedToken);
+			}
+
+			typeArgs.Add((TypeReferenceNode) typeArgNode);
+			nextToken = lastUnprocessedToken;
+
+			if (nextToken.Type == TokenType.Comma)
+			{
+				continue;
+			}
+			else if (nextToken.Type == TokenType.GreaterThan)
+			{
+				return (typeArgs, GetNextToken());
+			}
+			else
+			{
+				_errors.Add(GenerateError($"Error QR202: Expected ',' or '>' in type argument list, but got {TokenRepr.ToString(nextToken)} instead.", nextToken));
+				return (null, nextToken);
+			}
+		}
+	}
+
+	/// <summary>
 	/// Parses a single function argument given that the last consumed token was the argument name (an identifier).
 	/// </summary>
 	/// <param name="argName"></param>
 	/// <returns></returns>
-	(ASTNode argDeclNode, Token lastUnprocessedToken) ParseSingleFunctionArg(string argName)
+	(ASTNode ArgDeclNode, Token LastUnprocessedToken) ParseSingleFunctionArg(string argName)
 	{
 		if (!ExpectNextToken(TokenType.Colon)) return (ErrorOutOfCurrentContext(), default);
 
@@ -558,9 +604,543 @@ public class DefaultParser(IEnumerable<Token> tokens)
 		return (new ArgDeclarationNode(argName, typeNode, defaultProtections), lastUnprocessedToken);
 	}
 
-	Expr ParseExpression(Token firstToken)
+	(Expr Expression, Token NextToken) ParseExpression(Token firstToken)
 	{
-		return new ErrorExpr();
+		return ParseLogicalOr(firstToken);
+	}
+
+	// Precedence 0 (lowest): Logical OR (||)
+	(Expr Expr, Token NextToken) ParseLogicalOr(Token firstToken)
+	{
+		var (left, token) = ParseLogicalAnd(firstToken);
+		
+		while (true)
+		{
+			if (token.Type == TokenType.Or)
+			{
+				var (right, nextToken) = ParseLogicalAnd(GetNextToken());
+				left = new LogicalOrExpr(left, right);
+				token = nextToken;
+			}
+			else
+			{
+				return (left, token);
+			}
+		}
+	}
+
+	// Precedence 1: Logical AND (&&) - parsed as two consecutive Ampersand tokens
+	(Expr Expr, Token NextToken) ParseLogicalAnd(Token firstToken)
+	{
+		var (left, token) = ParseBitwiseOr(firstToken);
+		
+		while (true)
+		{
+			if (token.Type == TokenType.Ampersand)
+			{
+				// Checkpoint before peeking at the next token
+				int checkpointPosition = SaveParserPosition();
+				var nextTokenToCheck = GetNextToken();
+				if (nextTokenToCheck.Type == TokenType.Ampersand && token.Location.Line == nextTokenToCheck.Location.Line && token.Location.Column + 1 == nextTokenToCheck.Location.Column)
+				{
+					// It's &&, parse the right side (nextTokenToCheck is already consumed, so just parse)
+					var (right, afterRight) = ParseBitwiseOr(GetNextToken());
+					left = new LogicalAndExpr(left, right);
+					token = afterRight;
+				}
+				else
+				{
+					// Not &&, restore position so nextTokenToCheck gets re-read properly
+					RestoreParserPosition(checkpointPosition);
+					return (left, token);
+				}
+			}
+			else
+			{
+				return (left, token);
+			}
+		}
+	}
+
+	// Precedence 2: Bitwise OR (|)
+	(Expr Expr, Token NextToken) ParseBitwiseOr(Token firstToken)
+	{
+		var (left, token) = ParseBitwiseXor(firstToken);
+		
+		while (true)
+		{
+			if (token.Type == TokenType.BitwiseOr)
+			{
+				var (right, nextToken) = ParseBitwiseXor(GetNextToken());
+				left = new BitwiseOrExpr(left, right);
+				token = nextToken;
+			}
+			else
+			{
+				return (left, token);
+			}
+		}
+	}
+
+	// Precedence 3: Bitwise XOR (^)
+	(Expr Expr, Token NextToken) ParseBitwiseXor(Token firstToken)
+	{
+		var (left, token) = ParseBitwiseAnd(firstToken);
+		
+		while (true)
+		{
+			if (token.Type == TokenType.BitwiseXor)
+			{
+				var (right, nextToken) = ParseBitwiseAnd(GetNextToken());
+				left = new BitwiseXorExpr(left, right);
+				token = nextToken;
+			}
+			else
+			{
+				return (left, token);
+			}
+		}
+	}
+
+	// Precedence 4: Bitwise AND (&)
+	(Expr Expr, Token NextToken) ParseBitwiseAnd(Token firstToken)
+	{
+		var (left, token) = ParseEquality(firstToken);
+		
+		while (true)
+		{
+			if (token.Type == TokenType.Ampersand)
+			{
+				int checkpointPosition = SaveParserPosition();
+				var nextTokenToCheck = GetNextToken();
+				if (nextTokenToCheck.Type == TokenType.Ampersand && token.Location.Line == nextTokenToCheck.Location.Line && token.Location.Column + 1 == nextTokenToCheck.Location.Column)
+				{
+					// It's &&, which is logical AND at a lower precedence level, so restore and return
+					RestoreParserPosition(checkpointPosition);
+					return (left, token);
+				}
+				// Otherwise continue with single &
+				var (right, afterRight) = ParseEquality(nextTokenToCheck);
+				left = new BitwiseAndExpr(left, right);
+				token = afterRight;
+			}
+			else
+			{
+				return (left, token);
+			}
+		}
+	}
+
+	// Precedence 5: Equality (==, !=)
+	(Expr Expr, Token NextToken) ParseEquality(Token firstToken)
+	{
+		var (left, token) = ParseRelational(firstToken);
+		
+		while (true)
+		{
+			if (token.Type == TokenType.Eq)
+			{
+				var (right, nextToken) = ParseRelational(GetNextToken());
+				left = new EqualExpr(left, right);
+				token = nextToken;
+			}
+			else if (token.Type == TokenType.NotEq)
+			{
+				var (right, nextToken) = ParseRelational(GetNextToken());
+				left = new NotEqualExpr(left, right);
+				token = nextToken;
+			}
+			else
+			{
+				return (left, token);
+			}
+		}
+	}
+
+	// Precedence 6: Relational (<, <=, >, >=)
+	(Expr Expr, Token NextToken) ParseRelational(Token firstToken)
+	{
+		var (left, token) = ParseShift(firstToken);
+		
+		while (true)
+		{
+			if (token.Type == TokenType.LessThan)
+			{
+				var (right, nextToken) = ParseShift(GetNextToken());
+				left = new LessThanExpr(left, right);
+				token = nextToken;
+			}
+			else if (token.Type == TokenType.LessThanEqual)
+			{
+				var (right, nextToken) = ParseShift(GetNextToken());
+				left = new LessThanEqualExpr(left, right);
+				token = nextToken;
+			}
+			else if (token.Type == TokenType.GreaterThan)
+			{
+				// Could be > or start of >>, check the next token
+				int checkpointPosition = SaveParserPosition();
+				var nextTokenToCheck = GetNextToken();
+				if (nextTokenToCheck.Type == TokenType.GreaterThan && token.Location.Line == nextTokenToCheck.Location.Line && token.Location.Column + 1 == nextTokenToCheck.Location.Column)
+				{
+					// It's >>, restore position and return to let ParseShift handle it
+					RestoreParserPosition(checkpointPosition);
+					return (left, token);
+				}
+				else
+				{
+					// It's just >, parse right with the token we already consumed
+					var (right, afterRight) = ParseShift(nextTokenToCheck);
+					left = new GreaterThanExpr(left, right);
+					token = afterRight;
+				}
+			}
+			else if (token.Type == TokenType.GreaterThanEqual)
+			{
+				var (right, nextToken) = ParseShift(GetNextToken());
+				left = new GreaterThanEqualExpr(left, right);
+				token = nextToken;
+			}
+			else
+			{
+				return (left, token);
+			}
+		}
+	}
+
+	// Precedence 7: Bitwise Shift (<<, >>)
+	(Expr Expr, Token NextToken) ParseShift(Token firstToken)
+	{
+		var (left, token) = ParseAdditive(firstToken);
+		
+		while (true)
+		{
+			if (token.Type == TokenType.LeftShift)
+			{
+				var (right, nextToken) = ParseAdditive(GetNextToken());
+				left = new LeftShiftExpr(left, right);
+				token = nextToken;
+			}
+			else if (token.Type == TokenType.GreaterThan)
+			{
+				int checkpointPosition = SaveParserPosition();
+				var nextTokenToCheck = GetNextToken();
+				if (nextTokenToCheck.Type == TokenType.GreaterThan && token.Location.Line == nextTokenToCheck.Location.Line && token.Location.Column + 1 == nextTokenToCheck.Location.Column)
+				{
+					// It's >>, parse the right side
+					var (right, afterRight) = ParseAdditive(GetNextToken());
+					left = new RightShiftExpr(left, right);
+					token = afterRight;
+				}
+				else
+				{
+					// Not >>, restore position and return
+					RestoreParserPosition(checkpointPosition);
+					return (left, token);
+				}
+			}
+			else
+			{
+				return (left, token);
+			}
+		}
+	}
+
+	// Precedence 8: Additive (+, -)
+	(Expr Expr, Token NextToken) ParseAdditive(Token firstToken)
+	{
+		var (left, token) = ParseMultiplicative(firstToken);
+		
+		while (true)
+		{
+			if (token.Type == TokenType.Add)
+			{
+				var (right, nextToken) = ParseMultiplicative(GetNextToken());
+				left = new AddExpr(left, right);
+				token = nextToken;
+			}
+			else if (token.Type == TokenType.Sub)
+			{
+				var (right, nextToken) = ParseMultiplicative(GetNextToken());
+				left = new SubExpr(left, right);
+				token = nextToken;
+			}
+			else
+			{
+				return (left, token);
+			}
+		}
+	}
+
+	// Precedence 9: Multiplicative (*, /, %)
+	(Expr Expr, Token NextToken) ParseMultiplicative(Token firstToken)
+	{
+		var (left, token) = ParseUnary(firstToken);
+		
+		while (true)
+		{
+			if (token.Type == TokenType.Asterisk)
+			{
+				var (right, nextToken) = ParseUnary(GetNextToken());
+				left = new MulExpr(left, right);
+				token = nextToken;
+			}
+			else if (token.Type == TokenType.Div)
+			{
+				var (right, nextToken) = ParseUnary(GetNextToken());
+				left = new DivExpr(left, right);
+				token = nextToken;
+			}
+			else if (token.Type == TokenType.Mod)
+			{
+				var (right, nextToken) = ParseUnary(GetNextToken());
+				left = new ModExpr(left, right);
+				token = nextToken;
+			}
+			else
+			{
+				return (left, token);
+			}
+		}
+	}
+
+	// Precedence 10: Unary (!, -, ++, --, &, *, +, ~)
+	(Expr Expr, Token NextToken) ParseUnary(Token token)
+	{
+		if (token.Type == TokenType.Not)
+		{
+			var (operand, afterOperand) = ParseUnary(GetNextToken());
+			return (new LogicalNotExpr(operand), afterOperand);
+		}
+		else if (token.Type == TokenType.Sub)
+		{
+			var (operand, afterOperand) = ParseUnary(GetNextToken());
+			return (new UnaryMinusExpr(operand), afterOperand);
+		}
+		else if (token.Type == TokenType.Increment)
+		{
+			var (operand, afterOperand) = ParseUnary(GetNextToken());
+			return (new PreIncrementExpr(operand), afterOperand);
+		}
+		else if (token.Type == TokenType.Decrement)
+		{
+			var (operand, afterOperand) = ParseUnary(GetNextToken());
+			return (new PreDecrementExpr(operand), afterOperand);
+		}
+		else if (token.Type == TokenType.Ampersand)
+		{
+			var (operand, afterOperand) = ParseUnary(GetNextToken());
+			return (new RefExpr(operand), afterOperand);
+		}
+		else if (token.Type == TokenType.Asterisk)
+		{
+			var (operand, afterOperand) = ParseUnary(GetNextToken());
+			return (new DerefExpr(operand), afterOperand);
+		}
+		else if (token.Type == TokenType.Add)
+		{
+			var (operand, afterOperand) = ParseUnary(GetNextToken());
+			return (new UnaryPlusExpr(operand), afterOperand);
+		}
+		else if (token.Type == TokenType.BitwiseNot)
+		{
+			var (operand, afterOperand) = ParseUnary(GetNextToken());
+			return (new BitwiseNotExpr(operand), afterOperand);
+		}
+		else
+		{
+			return ParsePostfix(token);
+		}
+	}
+
+	// Precedence 11: Postfix (++, --, [], (), .)
+	(Expr Expr, Token NextToken) ParsePostfix(Token token)
+	{
+		var (expr, nextToken) = ParsePrimary(token);
+		
+		while (true)
+		{
+			if (nextToken.Type == TokenType.Increment)
+			{
+				expr = new PostIncrementExpr(expr);
+				nextToken = GetNextToken();
+			}
+			else if (nextToken.Type == TokenType.Decrement)
+			{
+				expr = new PostDecrementExpr(expr);
+				nextToken = GetNextToken();
+			}
+			else if (nextToken.Type == TokenType.LeftBracket)
+			{
+				var (index, afterIndex) = ParseLogicalOr(GetNextToken());
+				if (afterIndex.Type != TokenType.RightBracket)
+				{
+					_errors.Add(GenerateError($"Error QR202: Expected ']', but got {TokenRepr.ToString(afterIndex)} instead.", afterIndex));
+					return (new ErrorExpr(), afterIndex);
+				}
+				expr = new IndexExpr(expr, index);
+				nextToken = GetNextToken();
+			}
+			else if (nextToken.Type == TokenType.LeftParen)
+			{
+				// Function call
+				var args = new List<Expr>();
+				var argToken = GetNextToken();
+				if (argToken.Type != TokenType.RightParen)
+				{
+					var (arg, afterArg) = ParseLogicalOr(argToken);
+					args.Add(arg);
+					nextToken = afterArg;
+					while (true)
+					{
+						if (nextToken.Type == TokenType.RightParen)
+						{
+							break;
+						}
+						else if (nextToken.Type == TokenType.Comma)
+						{
+							var (nextArg, afterNextArg) = ParseLogicalOr(GetNextToken());
+							args.Add(nextArg);
+							nextToken = afterNextArg;
+						}
+						else
+						{
+							_errors.Add(GenerateError($"Error QR202: Expected ',' or ')' in function call, but got {TokenRepr.ToString(nextToken)} instead.", nextToken));
+							return (new ErrorExpr(), nextToken);
+						}
+					}
+				}
+				expr = new CallExpr(expr, [..args]);
+				nextToken = GetNextToken();
+			}
+			else if (nextToken.Type == TokenType.Dot)
+			{
+				if (!ExpectNextToken(TokenType.Identifier, out var memberToken))
+				{
+					return (new ErrorExpr(), nextToken);
+				}
+				var memberName = memberToken.Value;
+				nextToken = GetNextToken();
+
+				// Check for type parameters on the member
+				List<TypeReferenceNode> typeArgs = [];
+
+				if (nextToken.Type == TokenType.LessThan)
+				{
+					int checkpointPosition = SaveParserPosition();
+					int errorCountBefore = _errors.Count;
+					var (parsedArgs, afterTypeArgs) = ParseTypeArgumentListInExpression();
+
+					if (parsedArgs is null)
+					{
+						// Failed to parse as type arguments - restore position and errors,
+						// so < can be treated as a binary operator
+						RestoreParserPosition(checkpointPosition);
+						while (_errors.Count > errorCountBefore)
+						{
+							RemoveLastError();
+						}
+						// Create the dot expression without type args and return,
+						// letting the binary operator parser handle the <
+						expr = new DotExpr(expr, memberName, []);
+						return (expr, nextToken);
+					}
+					
+					typeArgs = parsedArgs;
+					nextToken = afterTypeArgs;
+				}
+
+				expr = new DotExpr(expr, memberName, [..typeArgs]);
+			}
+			else
+			{
+				return (expr, nextToken);
+			}
+		}
+	}
+
+	// Precedence 12: Primary (identifiers, literals, parenthesized expressions)
+	(Expr Expr, Token NextToken) ParsePrimary(Token token)
+	{
+		if (token.Type == TokenType.Keyword)
+		{
+			if (token.Value == "this")
+			{
+				return (new ThisExpr(), GetNextToken());
+			}
+			else if (token.Value == "true" || token.Value == "false")
+			{
+				return (new BooleanLiteralExpr(token.Value), GetNextToken());
+			}
+			else
+			{
+				_errors.Add(GenerateError($"Error QR202: Unexpected keyword '{token.Value}' in expression context.", token));
+				return (new ErrorExpr(), GetNextToken());
+			}
+		}
+		else if (token.Type == TokenType.Identifier)
+		{
+			var identifierName = token.Value;
+			var nextToken = GetNextToken();
+
+			// Check for type parameters
+			if (nextToken.Type == TokenType.LessThan)
+			{
+				int checkpointPosition = SaveParserPosition();
+				int errorCountBefore = _errors.Count;
+				var (typeArgs, afterTypeArgs) = ParseTypeArgumentListInExpression();
+
+				if (typeArgs is null)
+				{
+					// Failed to parse as type arguments - restore position and errors,
+					// so < can be treated as a binary operator
+					RestoreParserPosition(checkpointPosition);
+					while (_errors.Count > errorCountBefore)
+					{
+						RemoveLastError();
+					}
+					// Return the identifier without type args, with < still unconsumed
+					return (new NameReferenceExpr(identifierName, []), nextToken);
+				}
+
+				nextToken = afterTypeArgs;
+
+				return (new NameReferenceExpr(identifierName, [..typeArgs]), nextToken);
+			}
+
+			return (new NameReferenceExpr(identifierName, []), nextToken);
+		}
+		else if (token.Type == TokenType.IntegerLiteral)
+		{
+			return (new IntegerLiteralExpr(token.Value), GetNextToken());
+		}
+		else if (token.Type == TokenType.FloatLiteral)
+		{
+			return (new FloatLiteralExpr(token.Value), GetNextToken());
+		}
+		else if (token.Type == TokenType.StringLiteral)
+		{
+			return (new StringLiteralExpr(token.Value), GetNextToken());
+		}
+		else if (token.Type == TokenType.CharLiteral)
+		{
+			return (new CharLiteralExpr(token.Value), GetNextToken());
+		}
+		else if (token.Type == TokenType.LeftParen)
+		{
+			var (expr, afterParen) = ParseLogicalOr(GetNextToken());
+			if (afterParen.Type != TokenType.RightParen)
+			{
+				_errors.Add(GenerateError($"Error QR202: Expected ')', but got {TokenRepr.ToString(afterParen)} instead.", afterParen));
+				return (new ErrorExpr(), afterParen);
+			}
+			return (expr, GetNextToken());
+		}
+		else
+		{
+			_errors.Add(GenerateError($"Error QR202: Expected expression, but got {TokenRepr.ToString(token)} instead.", token));
+			return (new ErrorExpr(), token);
+		}
 	}
 
 	CodeStmt ParseReturnStatement()
@@ -573,9 +1153,19 @@ public class DefaultParser(IEnumerable<Token> tokens)
 		}
 		else
 		{
-			var exprNode = ParseExpression(token);
+			var (exprNode, nextToken) = ParseExpression(token);
 
-			if (!ExpectNextToken(TokenType.Semicolon)) return ErrorOutOfCurrentCodeStmt();
+			if (exprNode is ErrorExpr)
+			{
+				return ErrorOutOfCurrentCodeStmt();
+			}
+
+			if (nextToken.Type != TokenType.Semicolon)
+			{
+				_errors.Add(GenerateError($"Error QR202: Expected ';' after return statement, but got {TokenRepr.ToString(nextToken)} instead.", nextToken));
+
+				return ErrorOutOfCurrentCodeStmt();
+			}
 
 			return new ReturnStmt(exprNode);
 		}
@@ -633,7 +1223,7 @@ public class DefaultParser(IEnumerable<Token> tokens)
 				continue;
 			}
 
-			if (token.Type == TokenType.Keyword)
+			if (token.Type == TokenType.Keyword && token.Value != "this")
 			{
 				if (token.Value == "let")
 				{
@@ -704,16 +1294,61 @@ public class DefaultParser(IEnumerable<Token> tokens)
 			}
 			else
 			{
-				
-				_errors.Add(GenerateError($"Error QR210: Token {TokenRepr.ToString(token)} may not begin a function-level statement.", token));
+				var (expr, nextToken) = ParseExpression(token);
 
-				return statements;
-			}
+				if (expr is ErrorExpr)
+				{
+					SkipToNextStatement();
+					continue;
+				}
 
+				// Check for assignment: DotExpr, NameReferenceExpr, or IndexExpr followed by =
+				if (nextToken.Type == TokenType.Assign && 
+					(expr is DotExpr or NameReferenceExpr or IndexExpr))
+				{
+					var (rhs, postExprToken) = ParseExpression(GetNextToken());
 
-			if (!ExpectNextToken(TokenType.Semicolon))
-			{
-				SkipToNextStatement();
+					if (rhs is not ErrorExpr)
+					{
+						statements.Add(new AssignmentStmt(expr, rhs));
+						if (postExprToken.Type != TokenType.Semicolon)
+						{
+							_errors.Add(GenerateError($"Error QR202: Expected ';', but got {TokenRepr.ToString(postExprToken)} instead.", postExprToken));
+
+							SkipToNextStatement();
+						}
+					}
+					else
+					{
+						SkipToNextStatement();
+					}
+				}
+				else if (expr is CallExpr or PostIncrementExpr or PostDecrementExpr or PreIncrementExpr or PreDecrementExpr)
+				{
+					var exprStmt = new ExprStmt(expr);
+					statements.Add(exprStmt);
+					
+					if (nextToken.Type != TokenType.Semicolon)
+					{
+						_errors.Add(GenerateError($"Error QR202: Expected ';', but got {TokenRepr.ToString(nextToken)} instead.", nextToken));
+						SkipToNextStatement();
+					}
+				}
+				else if (nextToken.Type == TokenType.Assign)
+				{
+					_errors.Add(GenerateError($"Error QR203: Invalid assignment target. Only identifiers, member accesses, and array indexing can be assigned to.", token));
+					SkipToNextStatement();
+				}
+				else
+				{
+					_errors.Add(GenerateError($"Error QR203: Only function call, increment, and decrement expressions may be converted to statements.", token));
+					
+					if (nextToken.Type != TokenType.Semicolon)
+					{
+						_errors.Add(GenerateError($"Error QR202: Expected ';', but got {TokenRepr.ToString(nextToken)} instead.", nextToken));
+						SkipToNextStatement();
+					}
+				}
 			}
 		}
 
@@ -1198,9 +1833,7 @@ public class DefaultParser(IEnumerable<Token> tokens)
 		{
 			var initializerToken = GetNextToken();
 
-			initializer = ParseExpression(initializerToken);
-
-			nextToken = GetNextToken();
+			(initializer, nextToken) = ParseExpression(initializerToken);
 		}
 		
 		if (nextToken.Type != TokenType.Semicolon)
