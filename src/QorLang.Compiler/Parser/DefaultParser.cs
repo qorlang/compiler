@@ -1854,8 +1854,6 @@ public class DefaultParser(IEnumerable<Token> tokens)
 	{
 		List<ASTNode> nodes = [];
 
-		_errors.Clear();
-
 		var lastToken = default(Token);
 		var token = default(Token);
 
