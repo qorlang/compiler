@@ -6,12 +6,12 @@ namespace QorLang.Compiler.Parser.Nodes.CodeStatements;
 
 public class WhileStmt(
 	Expr condition,
-	List<CodeStmt> body,
+	CodeStmt[] body,
 	TokenLocation location
 ) : CodeStmt(location)
 {
 	public readonly Expr Condition = condition;
-	public readonly List<CodeStmt> Body = body;
+	public readonly CodeStmt[] Body = body;
 
 	public override bool Equals(object? obj)
 	{
@@ -21,7 +21,7 @@ public class WhileStmt(
 
 	public override int GetHashCode()
 	{
-		return HashCode.Combine(Condition, Body);
+		return HashCode.Combine(Condition, NodeUtils.GetArrayHash(Body));
 	}
 
 	public override string ToString() => JsonSerializer.Serialize(new { type = nameof(WhileStmt), condition = JsonDocument.Parse(Condition.ToString()).RootElement, body = Body.Select(b => JsonDocument.Parse(b.ToString()).RootElement).ToArray() });

@@ -1174,10 +1174,83 @@ public class DefaultParser(IEnumerable<Token> tokens)
 		}
 	}
 
+	/// <summary>
+	/// Parses a local variable declaration of the form <code>let x : Type $[prot?] = init?;</code> given that the last consumed token was the 'let' keyword.
+	/// </summary>
+	/// <returns></returns>
 	CodeStmt ParseLocalDeclaration()
 	{
-		// TODO: Implement local variable declaration parsing
-		return ErrorOutOfCurrentCodeStmt();
+		if (!ExpectNextToken(TokenType.Identifier, out var nameToken))
+		{
+			return ErrorOutOfCurrentCodeStmt();
+		}
+
+		if (!ExpectNextToken(TokenType.Colon))
+		{
+			return ErrorOutOfCurrentCodeStmt();
+		}
+
+		var (typeNodeResult, lastUnprocessedToken) = ParseTypeReference();
+
+		if (typeNodeResult is ErrorNode)
+		{
+			return ErrorOutOfCurrentCodeStmt();
+		}
+
+		var typeNode = (TypeReferenceNode) typeNodeResult;
+
+		DataProtection[] protections;
+
+		if (lastUnprocessedToken.Type == TokenType.Dollar)
+		{
+			if (!ExpectNextToken(TokenType.LeftBracket))
+			{
+				return ErrorOutOfCurrentCodeStmt();
+			}
+
+			var parsedProt = ParseSimpleProtectionList(typeNode.RefLevel);
+
+			if (parsedProt is null)
+			{
+				return ErrorOutOfCurrentCodeStmt();
+			}
+
+			protections = parsedProt;
+
+			lastUnprocessedToken = GetNextToken();
+		}
+		else
+		{
+			var defaultProtections = new DataProtection[typeNode.RefLevel + 1];
+			Array.Fill(defaultProtections, DataProtection.ReadOnly);
+
+			protections = defaultProtections;
+		}
+
+		Expr? initializer = null;
+
+		if (lastUnprocessedToken.Type == TokenType.Assign)
+		{
+			var (initExpr, nextToken) = ParseExpression(GetNextToken());
+
+			if (initExpr is ErrorExpr)
+			{
+				return ErrorOutOfCurrentCodeStmt();
+			}
+
+			initializer = initExpr;
+
+			lastUnprocessedToken = nextToken;
+		}
+		
+		if (lastUnprocessedToken.Type != TokenType.Semicolon)
+		{
+			_errors.Add(GenerateError($"Error QR202: Expected  ';' after local variable declaration, but got {TokenRepr.ToString(lastUnprocessedToken)} instead.", lastUnprocessedToken));
+
+			return ErrorOutOfCurrentCodeStmt();
+		}
+
+		return new LocalDeclarationStmt(nameToken.Value, typeNode, protections, initializer, nameToken.Location);
 	}
 
 	CodeStmt ParseIfStatement()
@@ -1233,6 +1306,7 @@ public class DefaultParser(IEnumerable<Token> tokens)
 					var localDeclStmt = ParseLocalDeclaration();
 
 					statements.Add(localDeclStmt);
+					continue;
 				}
 				else if (token.Value == "if")
 				{

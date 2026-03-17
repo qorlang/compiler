@@ -6,18 +6,18 @@ namespace QorLang.Compiler.Parser.Nodes.CodeStatements;
 
 public class IfStmt(
 	Expr condition,
-	List<CodeStmt> thenBody,
-	List<CodeStmt> elseBody,
+	CodeStmt[] thenBody,
+	CodeStmt[] elseBody,
 	TokenLocation location
 ) : CodeStmt(location)
 {
 	public readonly Expr Condition = condition;
-	public readonly List<CodeStmt> ThenBody = thenBody;
-	public readonly List<CodeStmt> ElseBody = elseBody;
+	public readonly CodeStmt[] ThenBody = thenBody;
+	public readonly CodeStmt[] ElseBody = elseBody;
 
 	public IfStmt(
 		Expr condition,
-		List<CodeStmt> thenBody,
+		CodeStmt[] thenBody,
 		TokenLocation location
 	) : this(condition, thenBody, [], location) { }
 
@@ -31,7 +31,7 @@ public class IfStmt(
 
 	public override int GetHashCode()
 	{
-		return HashCode.Combine(Condition, ThenBody, ElseBody);
+		return HashCode.Combine(Condition, NodeUtils.GetArrayHash(ThenBody), NodeUtils.GetArrayHash(ElseBody));
 	}
 
 	public override string ToString() => JsonSerializer.Serialize(new { type = nameof(IfStmt), condition = JsonDocument.Parse(Condition.ToString()).RootElement, thenBody = ThenBody.Select(b => JsonDocument.Parse(b.ToString()).RootElement).ToArray(), elseBody = ElseBody.Select(b => JsonDocument.Parse(b.ToString()).RootElement).ToArray() });

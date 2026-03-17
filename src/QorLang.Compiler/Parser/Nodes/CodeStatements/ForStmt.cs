@@ -5,28 +5,32 @@ using QorLang.Compiler.Parser.Nodes.Expressions;
 namespace QorLang.Compiler.Parser.Nodes.CodeStatements;
 
 public class ForStmt(
-	string iteratorName,
-	Expr iterableExpression,
-	List<CodeStmt> body,
+	CodeStmt initializer,
+	Expr? condition,
+	Expr? increment,
+	CodeStmt[] body,
 	TokenLocation location
 ) : CodeStmt(location)
 {
-	public readonly string IteratorName = iteratorName;
-	public readonly Expr IterableExpression = iterableExpression;
-	public readonly List<CodeStmt> Body = body;
+	public readonly CodeStmt? Initializer = initializer;
+	public readonly Expr? Condition = condition;
+	public readonly Expr? Increment = increment;
+	public readonly CodeStmt[] Body = body;
 
 	public override bool Equals(object? obj)
 	{
 		if (obj is not ForStmt other) return false;
-		return IteratorName == other.IteratorName &&
-			IterableExpression.Equals(other.IterableExpression) &&
-			Body.SequenceEqual(other.Body);
+
+		return Equals(Initializer, other.Initializer) &&
+			   Equals(Condition, other.Condition) &&
+			   Equals(Increment, other.Increment) &&
+			   Body.SequenceEqual(other.Body);
 	}
 
 	public override int GetHashCode()
 	{
-		return HashCode.Combine(IteratorName, IterableExpression, Body);
+		return HashCode.Combine(Initializer, Condition, Increment, NodeUtils.GetArrayHash(Body));
 	}
 
-	public override string ToString() => JsonSerializer.Serialize(new { type = nameof(ForStmt), iteratorName = IteratorName, iterableExpression = JsonDocument.Parse(IterableExpression.ToString()).RootElement, body = Body.Select(b => JsonDocument.Parse(b.ToString()).RootElement).ToArray() });
+	public override string ToString() => JsonSerializer.Serialize(new { type = nameof(ForStmt), initializer = JsonDocument.Parse(Initializer?.ToString() ?? "null").RootElement, condition = JsonDocument.Parse(Condition?.ToString() ?? "null").RootElement, increment = JsonDocument.Parse(Increment?.ToString() ?? "null").RootElement, body = Body.Select(b => JsonDocument.Parse(b.ToString()).RootElement).ToArray() });
 }
