@@ -1,11 +1,13 @@
 using System.Text.Json;
+using QorLang.Compiler.Lexer;
 
 namespace QorLang.Compiler.Parser.Nodes.Expressions;
 
 public class NameReferenceExpr(
 	string name,
-	TypeReferenceNode[] typeArguments
-) : Expr
+	TypeReferenceNode[] typeArguments,
+	TokenLocation location
+) : Expr(location)
 {
 	public readonly string Name = name;
 	public readonly TypeReferenceNode[] TypeArguments = typeArguments;

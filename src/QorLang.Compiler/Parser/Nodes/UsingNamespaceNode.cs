@@ -1,10 +1,12 @@
 using System.Text.Json;
+using QorLang.Compiler.Lexer;
 
 namespace QorLang.Compiler.Parser.Nodes;
 
 public class UsingNamespaceNode(
-	string namespaceName
-) : ASTNode
+	string namespaceName,
+	TokenLocation location
+) : ASTNode(location)
 {
 	public readonly string Name = namespaceName;
 

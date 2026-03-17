@@ -1,4 +1,5 @@
 using System.Text.Json;
+using QorLang.Compiler.Lexer;
 using QorLang.Compiler.Parser.Nodes.Expressions;
 
 namespace QorLang.Compiler.Parser.Nodes.CodeStatements;
@@ -6,8 +7,9 @@ namespace QorLang.Compiler.Parser.Nodes.CodeStatements;
 public class ForStmt(
 	string iteratorName,
 	Expr iterableExpression,
-	List<CodeStmt> body
-) : CodeStmt
+	List<CodeStmt> body,
+	TokenLocation location
+) : CodeStmt(location)
 {
 	public readonly string IteratorName = iteratorName;
 	public readonly Expr IterableExpression = iterableExpression;

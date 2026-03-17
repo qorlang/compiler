@@ -1,4 +1,5 @@
 using System.Text.Json;
+using QorLang.Compiler.Lexer;
 using QorLang.Compiler.Parser.Nodes.Expressions;
 
 namespace QorLang.Compiler.Parser.Nodes.CodeStatements;
@@ -7,8 +8,9 @@ public class LocalDeclarationStmt(
 	string name,
 	TypeReferenceNode dataType,
 	DataProtection[] protections,
-	Expr? initializer
-) : CodeStmt
+	Expr? initializer,
+	TokenLocation location
+) : CodeStmt(location)
 {
 	public readonly string Name = name;
 	public readonly TypeReferenceNode DataType = dataType;

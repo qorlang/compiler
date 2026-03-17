@@ -1,4 +1,5 @@
 using System.Text.Json;
+using QorLang.Compiler.Lexer;
 using QorLang.Compiler.Parser.Nodes.CodeStatements;
 
 namespace QorLang.Compiler.Parser.Nodes;
@@ -9,8 +10,9 @@ public class FunctionDefinitionNode(
 	ArgDeclarationNode[] parameters,
 	string[] typeParameters,
 	TypeReferenceNode returnType,
-	CodeStmt[] body
-) : ASTNode
+	CodeStmt[] body,
+	TokenLocation location
+) : ASTNode(location)
 {
 	public readonly string Name = name;
 	public readonly AccessLevel AccessLevel = accessLevel;

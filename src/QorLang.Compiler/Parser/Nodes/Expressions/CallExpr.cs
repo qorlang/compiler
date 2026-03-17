@@ -1,11 +1,13 @@
 using System.Text.Json;
+using QorLang.Compiler.Lexer;
 
 namespace QorLang.Compiler.Parser.Nodes.Expressions;
 
 public class CallExpr(
 	Expr target,
-	Expr[] arguments
-) : Expr
+	Expr[] arguments,
+	TokenLocation location
+) : Expr(location)
 {
 	public readonly Expr Target = target;
 	public readonly Expr[] Arguments = arguments;

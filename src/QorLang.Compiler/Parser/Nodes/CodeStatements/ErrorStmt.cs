@@ -1,6 +1,8 @@
+using QorLang.Compiler.Lexer;
+
 namespace QorLang.Compiler.Parser.Nodes.CodeStatements;
 
-public class ErrorStmt : CodeStmt
+public class ErrorStmt() : CodeStmt(default)
 {
 	public override bool Equals(object? obj)
 	{

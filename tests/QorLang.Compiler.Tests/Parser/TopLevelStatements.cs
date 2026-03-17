@@ -20,7 +20,9 @@ public class TopLevelStatements
 
 		Assert.Empty(errors);
 
-		Assert.Single(nodes, new NamespaceNode(namespaceName));
+		var namespaceNode = Assert.IsType<NamespaceNode>(nodes.First());
+
+		Assert.Single(nodes, new NamespaceNode(namespaceName, default));
 	}
 
 	[Theory]
@@ -39,7 +41,7 @@ public class TopLevelStatements
 
 		Assert.Empty(errors);
 
-		Assert.Single(nodes, new UsingNamespaceNode(namespaceName));
+		Assert.Single(nodes, new UsingNamespaceNode(namespaceName, default));
 	}
 
 	[Theory]
@@ -106,19 +108,6 @@ public class TopLevelStatements
 		Assert.Contains("QR204", errors.First().Message);
 	}
 
-	[Fact]
-	public void Parse_ValidImport_ReturnsImportNode()
-	{
-		string code = """
-		import "libqor/core";
-		""";
-
-		var (nodes, errors) = TestHelper.ParseCode(code);
-
-		Assert.Empty(errors);
-		Assert.Single(nodes, new ImportNode("libqor/core"));
-	}
-
 	[Theory]
 	[InlineData("libqor/core")]
 	[InlineData("libqor/threads")]
@@ -132,7 +121,7 @@ public class TopLevelStatements
 		var (nodes, errors) = TestHelper.ParseCode(code);
 
 		Assert.Empty(errors);
-		Assert.Single(nodes, new ImportNode(path));
+		Assert.Single(nodes, new ImportNode(path, default));
 	}
 
 	[Fact]
@@ -161,9 +150,9 @@ public class TopLevelStatements
 
 		Assert.Empty(errors);
 		Assert.Equal(3, nodes.Count());
-		Assert.Contains(new ImportNode("libqor/core"), nodes);
-		Assert.Contains(new ImportNode("libqor/threads"), nodes);
-		Assert.Contains(new ImportNode("mylib/utils"), nodes);
+		Assert.Contains(new ImportNode("libqor/core", default), nodes);
+		Assert.Contains(new ImportNode("libqor/threads", default), nodes);
+		Assert.Contains(new ImportNode("mylib/utils", default), nodes);
 	}
 
 	[Fact]

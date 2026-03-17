@@ -1,8 +1,9 @@
 using System.Text.Json;
+using QorLang.Compiler.Lexer;
 
 namespace QorLang.Compiler.Parser.Nodes;
 
-public class ImportNode(string modulePath) : ASTNode
+public class ImportNode(string modulePath, TokenLocation location) : ASTNode(location)
 {
 	public readonly string ModulePath = modulePath;
 

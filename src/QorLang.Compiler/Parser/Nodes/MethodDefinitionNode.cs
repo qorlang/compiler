@@ -1,4 +1,5 @@
 using System.Text.Json;
+using QorLang.Compiler.Lexer;
 using QorLang.Compiler.Parser.Nodes.CodeStatements;
 
 namespace QorLang.Compiler.Parser.Nodes;
@@ -10,8 +11,9 @@ public class MethodDefinitionNode(
 	string[] typeParameters,
 	TypeReferenceNode returnType,
 	DataProtection protectionOnSelf,
-	CodeStmt[] body
-) : TypeMemberDeclarationNode
+	CodeStmt[] body,
+	TokenLocation location
+) : TypeMemberDeclarationNode(location)
 {
 	public readonly string Name = name;
 	public readonly AccessLevel AccessLevel = accessLevel;

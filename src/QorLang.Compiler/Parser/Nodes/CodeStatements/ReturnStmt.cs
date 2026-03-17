@@ -1,11 +1,13 @@
 using System.Text.Json;
+using QorLang.Compiler.Lexer;
 using QorLang.Compiler.Parser.Nodes.Expressions;
 
 namespace QorLang.Compiler.Parser.Nodes.CodeStatements;
 
 public class ReturnStmt(
-	Expr? value
-) : CodeStmt
+	Expr? value,
+	TokenLocation location
+) : CodeStmt(location)
 {
 	public readonly Expr? Value = value;
 

@@ -1,12 +1,14 @@
 using System.Text.Json;
+using QorLang.Compiler.Lexer;
 
 namespace QorLang.Compiler.Parser.Nodes;
 
 public class ArgDeclarationNode(
 	string name,
 	TypeReferenceNode dataType,
-	DataProtection[] protections
-) : ASTNode
+	DataProtection[] protections,
+	TokenLocation location
+) : ASTNode(location)
 {
 	public readonly string Name = name;
 	public readonly TypeReferenceNode DataType = dataType;

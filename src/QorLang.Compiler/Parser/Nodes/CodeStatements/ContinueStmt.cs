@@ -1,6 +1,8 @@
+using QorLang.Compiler.Lexer;
+
 namespace QorLang.Compiler.Parser.Nodes.CodeStatements;
 
-public class ContinueStmt : CodeStmt
+public class ContinueStmt(TokenLocation location) : CodeStmt(location)
 {
 	public override bool Equals(object? obj)
 	{

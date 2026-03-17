@@ -1,6 +1,8 @@
+using QorLang.Compiler.Lexer;
+
 namespace QorLang.Compiler.Parser.Nodes.CodeStatements;
 
-public class BreakStmt : CodeStmt
+public class BreakStmt(TokenLocation location) : CodeStmt(location)
 {
 	public override bool Equals(object? obj)
 	{

@@ -1,4 +1,5 @@
 using System.Text.Json;
+using QorLang.Compiler.Lexer;
 using QorLang.Compiler.Parser.Nodes.Expressions;
 
 namespace QorLang.Compiler.Parser.Nodes;
@@ -7,8 +8,9 @@ public class GlobalDeclarationNode(
 	string name,
 	TypeReferenceNode dataType,
 	Dictionary<AccessLevel, DataProtection[]> protections,
-	Expr? initializer
-) : ASTNode
+	Expr? initializer,
+	TokenLocation location
+) : ASTNode(location)
 {
 	public readonly string Name = name;
 	public readonly TypeReferenceNode DataType = dataType;

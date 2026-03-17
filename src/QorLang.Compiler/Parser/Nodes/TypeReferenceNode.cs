@@ -1,12 +1,14 @@
 using System.Text.Json;
+using QorLang.Compiler.Lexer;
 
 namespace QorLang.Compiler.Parser.Nodes;
 
 public class TypeReferenceNode(
 	string typeName,
 	IndirectionLayer[] indirectionLayers,
-	TypeReferenceNode[] typeArguments
-) : ASTNode
+	TypeReferenceNode[] typeArguments,
+	TokenLocation location
+) : ASTNode(location)
 {
 	public readonly string TypeName = typeName;
 
@@ -23,7 +25,7 @@ public class TypeReferenceNode(
 	/// </summary>
 	public int RefLevel => IndirectionLayers.Count(IndirectionLayer.PointerTo);
 
-	public static TypeReferenceNode Void() => new("::void", [], []);
+	public static TypeReferenceNode Void() => new("::void", [], [], default);
 
 	public override bool Equals(object? obj)
 	{

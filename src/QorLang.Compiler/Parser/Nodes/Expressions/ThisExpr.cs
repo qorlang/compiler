@@ -1,8 +1,9 @@
 using System.Text.Json;
+using QorLang.Compiler.Lexer;
 
 namespace QorLang.Compiler.Parser.Nodes.Expressions;
 
-public class ThisExpr : Expr
+public class ThisExpr(TokenLocation location) : Expr(location)
 {
 	public override bool Equals(object? obj)
 	{

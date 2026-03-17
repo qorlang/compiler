@@ -1,12 +1,14 @@
 using System.Text.Json;
+using QorLang.Compiler.Lexer;
 using QorLang.Compiler.Parser.Nodes.Expressions;
 
 namespace QorLang.Compiler.Parser.Nodes.CodeStatements;
 
 public class WhileStmt(
 	Expr condition,
-	List<CodeStmt> body
-) : CodeStmt
+	List<CodeStmt> body,
+	TokenLocation location
+) : CodeStmt(location)
 {
 	public readonly Expr Condition = condition;
 	public readonly List<CodeStmt> Body = body;

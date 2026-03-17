@@ -1,10 +1,10 @@
 using System.Text.Json;
+using QorLang.Compiler.Lexer;
 
 namespace QorLang.Compiler.Parser.Nodes.Expressions;
 
-public class PreIncrementExpr(Expr target) : Expr
+public class PreIncrementExpr(Expr target, TokenLocation location) : UnaryOpExpr(target, location)
 {
-	public readonly Expr Target = target;
 
 	public override bool Equals(object? obj)
 	{

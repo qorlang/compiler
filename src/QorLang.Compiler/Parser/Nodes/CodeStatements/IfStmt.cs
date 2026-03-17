@@ -1,4 +1,5 @@
 using System.Text.Json;
+using QorLang.Compiler.Lexer;
 using QorLang.Compiler.Parser.Nodes.Expressions;
 
 namespace QorLang.Compiler.Parser.Nodes.CodeStatements;
@@ -6,8 +7,9 @@ namespace QorLang.Compiler.Parser.Nodes.CodeStatements;
 public class IfStmt(
 	Expr condition,
 	List<CodeStmt> thenBody,
-	List<CodeStmt> elseBody
-) : CodeStmt
+	List<CodeStmt> elseBody,
+	TokenLocation location
+) : CodeStmt(location)
 {
 	public readonly Expr Condition = condition;
 	public readonly List<CodeStmt> ThenBody = thenBody;
@@ -15,8 +17,9 @@ public class IfStmt(
 
 	public IfStmt(
 		Expr condition,
-		List<CodeStmt> thenBody
-	) : this(condition, thenBody, []) { }
+		List<CodeStmt> thenBody,
+		TokenLocation location
+	) : this(condition, thenBody, [], location) { }
 
 	public override bool Equals(object? obj)
 	{

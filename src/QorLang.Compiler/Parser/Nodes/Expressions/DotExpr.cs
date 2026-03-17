@@ -1,12 +1,14 @@
 using System.Text.Json;
+using QorLang.Compiler.Lexer;
 
 namespace QorLang.Compiler.Parser.Nodes.Expressions;
 
 public class DotExpr(
 	Expr target,
 	string propertyName,
-	TypeReferenceNode[] typeArguments
-) : Expr
+	TypeReferenceNode[] typeArguments,
+	TokenLocation location
+) : Expr(location)
 {
 	public readonly Expr Target = target;
 	public readonly string PropertyName = propertyName;

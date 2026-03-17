@@ -1,8 +1,9 @@
 using System.Text.Json;
+using QorLang.Compiler.Lexer;
 
 namespace QorLang.Compiler.Parser.Nodes;
 
-public class TypeDefinitionNode(string name, AccessLevel accessLevel, string[] typeParameters, TypeMemberDeclarationNode[] memberDeclarations) : ASTNode
+public class TypeDefinitionNode(string name, AccessLevel accessLevel, string[] typeParameters, TypeMemberDeclarationNode[] memberDeclarations, TokenLocation location) : ASTNode(location)
 {
 	public readonly string Name = name;
 	public readonly AccessLevel AccessLevel = accessLevel;

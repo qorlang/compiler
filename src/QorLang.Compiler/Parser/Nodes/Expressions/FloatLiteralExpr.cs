@@ -1,8 +1,9 @@
 using System.Text.Json;
+using QorLang.Compiler.Lexer;
 
 namespace QorLang.Compiler.Parser.Nodes.Expressions;
 
-public class FloatLiteralExpr(string value) : Expr
+public class FloatLiteralExpr(string value, TokenLocation location) : Expr(location)
 {
 	public readonly string Value = value;
 

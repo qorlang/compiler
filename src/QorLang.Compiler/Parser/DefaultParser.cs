@@ -139,7 +139,7 @@ public class DefaultParser(IEnumerable<Token> tokens)
 	{
 		if (!ExpectNextToken(TokenType.StringLiteral, out var modulePathToken)) return ErrorOutOfCurrentContext();
 
-		return new ImportNode(modulePathToken.Value);
+		return new ImportNode(modulePathToken.Value, modulePathToken.Location);
 	}
 
 	/// <summary>
@@ -175,7 +175,7 @@ public class DefaultParser(IEnumerable<Token> tokens)
 			}
 		}
 
-		return new NamespaceNode(namespaceName);
+		return new NamespaceNode(namespaceName, nameToken.Location);
 	}
 
 	ASTNode ParseUsing()
@@ -207,7 +207,7 @@ public class DefaultParser(IEnumerable<Token> tokens)
 			}
 		}
 
-		return new UsingNamespaceNode(namespaceName);
+		return new UsingNamespaceNode(namespaceName, namespaceToken.Location);
 	}
 
 	/// <summary>
@@ -529,7 +529,7 @@ public class DefaultParser(IEnumerable<Token> tokens)
 			currToken = GetNextToken();
 		}
 
-		return (new TypeReferenceNode(typeName, [..indirectionLayers], [..genericArgs]), currToken);
+		return (new TypeReferenceNode(typeName, [..indirectionLayers], [..genericArgs], currToken.Location), currToken);
 	}
 
 	/// <summary>
@@ -577,7 +577,7 @@ public class DefaultParser(IEnumerable<Token> tokens)
 	/// <returns></returns>
 	(ASTNode ArgDeclNode, Token LastUnprocessedToken) ParseSingleFunctionArg(string argName)
 	{
-		if (!ExpectNextToken(TokenType.Colon)) return (ErrorOutOfCurrentContext(), default);
+		if (!ExpectNextToken(TokenType.Colon, out var earliestParsedToken)) return (ErrorOutOfCurrentContext(), default);
 
 		var (typeNodeResult, lastUnprocessedToken) = ParseTypeReference();
 
@@ -595,13 +595,13 @@ public class DefaultParser(IEnumerable<Token> tokens)
 
 			if (protections is null) return (ErrorOutOfCurrentContext(), default);
 
-			return (new ArgDeclarationNode(argName, typeNode, protections), GetNextToken());
+			return (new ArgDeclarationNode(argName, typeNode, protections, earliestParsedToken.Location), GetNextToken());
 		}
 
 		var defaultProtections = new DataProtection[typeNode.RefLevel + 1];
 		Array.Fill(defaultProtections, DataProtection.ReadOnly);
 
-		return (new ArgDeclarationNode(argName, typeNode, defaultProtections), lastUnprocessedToken);
+		return (new ArgDeclarationNode(argName, typeNode, defaultProtections, earliestParsedToken.Location), lastUnprocessedToken);
 	}
 
 	(Expr Expression, Token NextToken) ParseExpression(Token firstToken)
@@ -619,7 +619,7 @@ public class DefaultParser(IEnumerable<Token> tokens)
 			if (token.Type == TokenType.Or)
 			{
 				var (right, nextToken) = ParseLogicalAnd(GetNextToken());
-				left = new LogicalOrExpr(left, right);
+				left = new LogicalOrExpr(left, right, token.Location);
 				token = nextToken;
 			}
 			else
@@ -645,7 +645,7 @@ public class DefaultParser(IEnumerable<Token> tokens)
 				{
 					// It's &&, parse the right side (nextTokenToCheck is already consumed, so just parse)
 					var (right, afterRight) = ParseBitwiseOr(GetNextToken());
-					left = new LogicalAndExpr(left, right);
+					left = new LogicalAndExpr(left, right, token.Location);
 					token = afterRight;
 				}
 				else
@@ -672,7 +672,7 @@ public class DefaultParser(IEnumerable<Token> tokens)
 			if (token.Type == TokenType.BitwiseOr)
 			{
 				var (right, nextToken) = ParseBitwiseXor(GetNextToken());
-				left = new BitwiseOrExpr(left, right);
+				left = new BitwiseOrExpr(left, right, token.Location);
 				token = nextToken;
 			}
 			else
@@ -692,7 +692,7 @@ public class DefaultParser(IEnumerable<Token> tokens)
 			if (token.Type == TokenType.BitwiseXor)
 			{
 				var (right, nextToken) = ParseBitwiseAnd(GetNextToken());
-				left = new BitwiseXorExpr(left, right);
+				left = new BitwiseXorExpr(left, right, token.Location);
 				token = nextToken;
 			}
 			else
@@ -721,7 +721,7 @@ public class DefaultParser(IEnumerable<Token> tokens)
 				}
 				// Otherwise continue with single &
 				var (right, afterRight) = ParseEquality(nextTokenToCheck);
-				left = new BitwiseAndExpr(left, right);
+				left = new BitwiseAndExpr(left, right, token.Location);
 				token = afterRight;
 			}
 			else
@@ -741,13 +741,13 @@ public class DefaultParser(IEnumerable<Token> tokens)
 			if (token.Type == TokenType.Eq)
 			{
 				var (right, nextToken) = ParseRelational(GetNextToken());
-				left = new EqualExpr(left, right);
+				left = new EqualExpr(left, right, token.Location);
 				token = nextToken;
 			}
 			else if (token.Type == TokenType.NotEq)
 			{
 				var (right, nextToken) = ParseRelational(GetNextToken());
-				left = new NotEqualExpr(left, right);
+				left = new NotEqualExpr(left, right, token.Location);
 				token = nextToken;
 			}
 			else
@@ -767,13 +767,13 @@ public class DefaultParser(IEnumerable<Token> tokens)
 			if (token.Type == TokenType.LessThan)
 			{
 				var (right, nextToken) = ParseShift(GetNextToken());
-				left = new LessThanExpr(left, right);
+				left = new LessThanExpr(left, right, token.Location);
 				token = nextToken;
 			}
 			else if (token.Type == TokenType.LessThanEqual)
 			{
 				var (right, nextToken) = ParseShift(GetNextToken());
-				left = new LessThanEqualExpr(left, right);
+				left = new LessThanEqualExpr(left, right, token.Location);
 				token = nextToken;
 			}
 			else if (token.Type == TokenType.GreaterThan)
@@ -791,14 +791,14 @@ public class DefaultParser(IEnumerable<Token> tokens)
 				{
 					// It's just >, parse right with the token we already consumed
 					var (right, afterRight) = ParseShift(nextTokenToCheck);
-					left = new GreaterThanExpr(left, right);
+					left = new GreaterThanExpr(left, right, token.Location);
 					token = afterRight;
 				}
 			}
 			else if (token.Type == TokenType.GreaterThanEqual)
 			{
 				var (right, nextToken) = ParseShift(GetNextToken());
-				left = new GreaterThanEqualExpr(left, right);
+				left = new GreaterThanEqualExpr(left, right, token.Location);
 				token = nextToken;
 			}
 			else
@@ -818,7 +818,7 @@ public class DefaultParser(IEnumerable<Token> tokens)
 			if (token.Type == TokenType.LeftShift)
 			{
 				var (right, nextToken) = ParseAdditive(GetNextToken());
-				left = new LeftShiftExpr(left, right);
+				left = new LeftShiftExpr(left, right, token.Location);
 				token = nextToken;
 			}
 			else if (token.Type == TokenType.GreaterThan)
@@ -829,7 +829,7 @@ public class DefaultParser(IEnumerable<Token> tokens)
 				{
 					// It's >>, parse the right side
 					var (right, afterRight) = ParseAdditive(GetNextToken());
-					left = new RightShiftExpr(left, right);
+					left = new RightShiftExpr(left, right, token.Location);
 					token = afterRight;
 				}
 				else
@@ -856,13 +856,13 @@ public class DefaultParser(IEnumerable<Token> tokens)
 			if (token.Type == TokenType.Add)
 			{
 				var (right, nextToken) = ParseMultiplicative(GetNextToken());
-				left = new AddExpr(left, right);
+				left = new AddExpr(left, right, token.Location);
 				token = nextToken;
 			}
 			else if (token.Type == TokenType.Sub)
 			{
 				var (right, nextToken) = ParseMultiplicative(GetNextToken());
-				left = new SubExpr(left, right);
+				left = new SubExpr(left, right, token.Location);
 				token = nextToken;
 			}
 			else
@@ -882,19 +882,19 @@ public class DefaultParser(IEnumerable<Token> tokens)
 			if (token.Type == TokenType.Asterisk)
 			{
 				var (right, nextToken) = ParseUnary(GetNextToken());
-				left = new MulExpr(left, right);
+				left = new MulExpr(left, right, token.Location);
 				token = nextToken;
 			}
 			else if (token.Type == TokenType.Div)
 			{
 				var (right, nextToken) = ParseUnary(GetNextToken());
-				left = new DivExpr(left, right);
+				left = new DivExpr(left, right, token.Location);
 				token = nextToken;
 			}
 			else if (token.Type == TokenType.Mod)
 			{
 				var (right, nextToken) = ParseUnary(GetNextToken());
-				left = new ModExpr(left, right);
+				left = new ModExpr(left, right, token.Location);
 				token = nextToken;
 			}
 			else
@@ -910,42 +910,42 @@ public class DefaultParser(IEnumerable<Token> tokens)
 		if (token.Type == TokenType.Not)
 		{
 			var (operand, afterOperand) = ParseUnary(GetNextToken());
-			return (new LogicalNotExpr(operand), afterOperand);
+			return (new LogicalNotExpr(operand, token.Location), afterOperand);
 		}
 		else if (token.Type == TokenType.Sub)
 		{
 			var (operand, afterOperand) = ParseUnary(GetNextToken());
-			return (new UnaryMinusExpr(operand), afterOperand);
+			return (new UnaryMinusExpr(operand, token.Location), afterOperand);
 		}
 		else if (token.Type == TokenType.Increment)
 		{
 			var (operand, afterOperand) = ParseUnary(GetNextToken());
-			return (new PreIncrementExpr(operand), afterOperand);
+			return (new PreIncrementExpr(operand, token.Location), afterOperand);
 		}
 		else if (token.Type == TokenType.Decrement)
 		{
 			var (operand, afterOperand) = ParseUnary(GetNextToken());
-			return (new PreDecrementExpr(operand), afterOperand);
+			return (new PreDecrementExpr(operand, token.Location), afterOperand);
 		}
 		else if (token.Type == TokenType.Ampersand)
 		{
 			var (operand, afterOperand) = ParseUnary(GetNextToken());
-			return (new RefExpr(operand), afterOperand);
+			return (new RefExpr(operand, token.Location), afterOperand);
 		}
 		else if (token.Type == TokenType.Asterisk)
 		{
 			var (operand, afterOperand) = ParseUnary(GetNextToken());
-			return (new DerefExpr(operand), afterOperand);
+			return (new DerefExpr(operand, token.Location), afterOperand);
 		}
 		else if (token.Type == TokenType.Add)
 		{
 			var (operand, afterOperand) = ParseUnary(GetNextToken());
-			return (new UnaryPlusExpr(operand), afterOperand);
+			return (new UnaryPlusExpr(operand, token.Location), afterOperand);
 		}
 		else if (token.Type == TokenType.BitwiseNot)
 		{
 			var (operand, afterOperand) = ParseUnary(GetNextToken());
-			return (new BitwiseNotExpr(operand), afterOperand);
+			return (new BitwiseNotExpr(operand, token.Location), afterOperand);
 		}
 		else
 		{
@@ -962,12 +962,12 @@ public class DefaultParser(IEnumerable<Token> tokens)
 		{
 			if (nextToken.Type == TokenType.Increment)
 			{
-				expr = new PostIncrementExpr(expr);
+				expr = new PostIncrementExpr(expr, nextToken.Location);
 				nextToken = GetNextToken();
 			}
 			else if (nextToken.Type == TokenType.Decrement)
 			{
-				expr = new PostDecrementExpr(expr);
+				expr = new PostDecrementExpr(expr, nextToken.Location);
 				nextToken = GetNextToken();
 			}
 			else if (nextToken.Type == TokenType.LeftBracket)
@@ -978,7 +978,7 @@ public class DefaultParser(IEnumerable<Token> tokens)
 					_errors.Add(GenerateError($"Error QR202: Expected ']', but got {TokenRepr.ToString(afterIndex)} instead.", afterIndex));
 					return (new ErrorExpr(), afterIndex);
 				}
-				expr = new IndexExpr(expr, index);
+				expr = new IndexExpr(expr, index, nextToken.Location);
 				nextToken = GetNextToken();
 			}
 			else if (nextToken.Type == TokenType.LeftParen)
@@ -1010,11 +1010,13 @@ public class DefaultParser(IEnumerable<Token> tokens)
 						}
 					}
 				}
-				expr = new CallExpr(expr, [..args]);
+				expr = new CallExpr(expr, [..args], nextToken.Location);
 				nextToken = GetNextToken();
 			}
 			else if (nextToken.Type == TokenType.Dot)
 			{
+				var dotToken = nextToken;
+
 				if (!ExpectNextToken(TokenType.Identifier, out var memberToken))
 				{
 					return (new ErrorExpr(), nextToken);
@@ -1042,7 +1044,7 @@ public class DefaultParser(IEnumerable<Token> tokens)
 						}
 						// Create the dot expression without type args and return,
 						// letting the binary operator parser handle the <
-						expr = new DotExpr(expr, memberName, []);
+						expr = new DotExpr(expr, memberName, [], dotToken.Location);
 						return (expr, nextToken);
 					}
 					
@@ -1050,7 +1052,7 @@ public class DefaultParser(IEnumerable<Token> tokens)
 					nextToken = afterTypeArgs;
 				}
 
-				expr = new DotExpr(expr, memberName, [..typeArgs]);
+				expr = new DotExpr(expr, memberName, [..typeArgs], dotToken.Location);
 			}
 			else
 			{
@@ -1066,11 +1068,11 @@ public class DefaultParser(IEnumerable<Token> tokens)
 		{
 			if (token.Value == "this")
 			{
-				return (new ThisExpr(), GetNextToken());
+				return (new ThisExpr(token.Location), GetNextToken());
 			}
 			else if (token.Value == "true" || token.Value == "false")
 			{
-				return (new BooleanLiteralExpr(token.Value), GetNextToken());
+				return (new BooleanLiteralExpr(token.Value, token.Location), GetNextToken());
 			}
 			else
 			{
@@ -1080,6 +1082,7 @@ public class DefaultParser(IEnumerable<Token> tokens)
 		}
 		else if (token.Type == TokenType.Identifier)
 		{
+			var identToken = token;
 			var identifierName = token.Value;
 			var nextToken = GetNextToken();
 
@@ -1100,31 +1103,31 @@ public class DefaultParser(IEnumerable<Token> tokens)
 						RemoveLastError();
 					}
 					// Return the identifier without type args, with < still unconsumed
-					return (new NameReferenceExpr(identifierName, []), nextToken);
+					return (new NameReferenceExpr(identifierName, [], identToken.Location), nextToken);
 				}
 
 				nextToken = afterTypeArgs;
 
-				return (new NameReferenceExpr(identifierName, [..typeArgs]), nextToken);
+				return (new NameReferenceExpr(identifierName, [..typeArgs], identToken.Location), nextToken);
 			}
 
-			return (new NameReferenceExpr(identifierName, []), nextToken);
+			return (new NameReferenceExpr(identifierName, [], identToken.Location), nextToken);
 		}
 		else if (token.Type == TokenType.IntegerLiteral)
 		{
-			return (new IntegerLiteralExpr(token.Value), GetNextToken());
+			return (new IntegerLiteralExpr(token.Value, token.Location), GetNextToken());
 		}
 		else if (token.Type == TokenType.FloatLiteral)
 		{
-			return (new FloatLiteralExpr(token.Value), GetNextToken());
+			return (new FloatLiteralExpr(token.Value, token.Location), GetNextToken());
 		}
 		else if (token.Type == TokenType.StringLiteral)
 		{
-			return (new StringLiteralExpr(token.Value), GetNextToken());
+			return (new StringLiteralExpr(token.Value, token.Location), GetNextToken());
 		}
 		else if (token.Type == TokenType.CharLiteral)
 		{
-			return (new CharLiteralExpr(token.Value), GetNextToken());
+			return (new CharLiteralExpr(token.Value, token.Location), GetNextToken());
 		}
 		else if (token.Type == TokenType.LeftParen)
 		{
@@ -1143,13 +1146,13 @@ public class DefaultParser(IEnumerable<Token> tokens)
 		}
 	}
 
-	CodeStmt ParseReturnStatement()
+	CodeStmt ParseReturnStatement(Token returnKeywordToken)
 	{
 		var token = GetNextToken();
 
 		if (token.Type == TokenType.Semicolon)
 		{
-			return new ReturnStmt(null);
+			return new ReturnStmt(null, returnKeywordToken.Location);
 		}
 		else
 		{
@@ -1167,7 +1170,7 @@ public class DefaultParser(IEnumerable<Token> tokens)
 				return ErrorOutOfCurrentCodeStmt();
 			}
 
-			return new ReturnStmt(exprNode);
+			return new ReturnStmt(exprNode, returnKeywordToken.Location);
 		}
 	}
 
@@ -1260,7 +1263,7 @@ public class DefaultParser(IEnumerable<Token> tokens)
 						continue;
 					}
 
-					statements.Add(new BreakStmt());
+					statements.Add(new BreakStmt(token.Location));
 				}
 				else if (token.Value == "continue")
 				{
@@ -1273,11 +1276,11 @@ public class DefaultParser(IEnumerable<Token> tokens)
 						continue;
 					}
 
-					statements.Add(new ContinueStmt());
+					statements.Add(new ContinueStmt(token.Location));
 				}
 				else if (token.Value == "return")
 				{
-					var returnStmt = ParseReturnStatement();
+					var returnStmt = ParseReturnStatement(token);
 
 					statements.Add(returnStmt);
 
@@ -1310,7 +1313,7 @@ public class DefaultParser(IEnumerable<Token> tokens)
 
 					if (rhs is not ErrorExpr)
 					{
-						statements.Add(new AssignmentStmt(expr, rhs));
+						statements.Add(new AssignmentStmt(expr, rhs, nextToken.Location));
 						if (postExprToken.Type != TokenType.Semicolon)
 						{
 							_errors.Add(GenerateError($"Error QR202: Expected ';', but got {TokenRepr.ToString(postExprToken)} instead.", postExprToken));
@@ -1369,6 +1372,7 @@ public class DefaultParser(IEnumerable<Token> tokens)
 		List<ArgDeclarationNode> parameters = [];
 
 		var token = GetNextToken();
+		var firstParsedToken = token;
 
 		if (token.Type == TokenType.LessThan)
 		{
@@ -1512,10 +1516,10 @@ public class DefaultParser(IEnumerable<Token> tokens)
 
 		if (isMethod)
 		{
-			return new MethodDefinitionNode(functionName, accessLevel, [..parameters], [..typeParameters], returnType, selfProt, [..body]);
+			return new MethodDefinitionNode(functionName, accessLevel, [..parameters], [..typeParameters], returnType, selfProt, [..body], firstParsedToken.Location);
 		}
 
-		return new FunctionDefinitionNode(functionName, accessLevel, [..parameters], [..typeParameters], returnType, [..body]);
+		return new FunctionDefinitionNode(functionName, accessLevel, [..parameters], [..typeParameters], returnType, [..body], firstParsedToken.Location);
 	}
 
 	/// <summary>
@@ -1609,7 +1613,7 @@ public class DefaultParser(IEnumerable<Token> tokens)
 			return ErrorOutOfCurrentContext();
 		}
 
-		return new FieldDeclarationNode(nameToken.Value, typeNode, protections);		
+		return new FieldDeclarationNode(nameToken.Value, typeNode, protections, nameToken.Location);		
 	}
 
 	/// <summary>
@@ -1740,7 +1744,7 @@ public class DefaultParser(IEnumerable<Token> tokens)
 		}
 
 
-		return new TypeDefinitionNode(nameToken.Value, typeIsPublic ? AccessLevel.Public : AccessLevel.Private, [..typeParameters], [..memberDeclarations]);
+		return new TypeDefinitionNode(nameToken.Value, typeIsPublic ? AccessLevel.Public : AccessLevel.Private, [..typeParameters], [..memberDeclarations],nameToken.Location);
 	}
 
 	/// <summary>
@@ -1843,7 +1847,7 @@ public class DefaultParser(IEnumerable<Token> tokens)
 			return ErrorOutOfCurrentContext();
 		}
 
-		return new GlobalDeclarationNode(nameToken.Value, typeNode, protections, initializer);
+		return new GlobalDeclarationNode(nameToken.Value, typeNode, protections, initializer, nameToken.Location);
 	}
 
 	public ParserResult ParseModule()

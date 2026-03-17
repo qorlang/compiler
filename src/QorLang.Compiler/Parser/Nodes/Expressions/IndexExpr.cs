@@ -1,8 +1,9 @@
 using System.Text.Json;
+using QorLang.Compiler.Lexer;
 
 namespace QorLang.Compiler.Parser.Nodes.Expressions;
 
-public class IndexExpr(Expr target, Expr index) : Expr
+public class IndexExpr(Expr target, Expr index, TokenLocation location) : Expr(location)
 {
 	public readonly Expr Target = target;
 	public readonly Expr Index = index;

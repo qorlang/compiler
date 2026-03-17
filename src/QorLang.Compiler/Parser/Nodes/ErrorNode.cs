@@ -2,7 +2,7 @@ using System.Text.Json;
 
 namespace QorLang.Compiler.Parser.Nodes;
 
-public class ErrorNode : ASTNode
+public class ErrorNode() : ASTNode(default) // we don't need a location since the parser should have thrown an error
 {
 	public override bool Equals(object? obj)
 	{

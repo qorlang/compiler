@@ -1,8 +1,9 @@
 using System.Text.Json;
+using QorLang.Compiler.Lexer;
 
 namespace QorLang.Compiler.Parser.Nodes;
 
-public class NamespaceNode(string name) : ASTNode
+public class NamespaceNode(string name, TokenLocation location) : ASTNode(location)
 {
 	public readonly string Name = name;
 

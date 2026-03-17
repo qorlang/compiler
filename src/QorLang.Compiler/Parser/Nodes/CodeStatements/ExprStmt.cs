@@ -1,9 +1,10 @@
 using System.Text.Json;
+using QorLang.Compiler.Lexer;
 using QorLang.Compiler.Parser.Nodes.Expressions;
 
 namespace QorLang.Compiler.Parser.Nodes.CodeStatements;
 
-public class ExprStmt(Expr expr) : CodeStmt
+public class ExprStmt(Expr expr) : CodeStmt(expr.Location)
 {
 	public readonly Expr Expr = expr;
 

@@ -1,12 +1,14 @@
 using System.Text.Json;
+using QorLang.Compiler.Lexer;
 
 namespace QorLang.Compiler.Parser.Nodes;
 
 public class FieldDeclarationNode(
 	string name,
 	TypeReferenceNode dataType,
-	Dictionary<AccessLevel, DataProtection[]> protections
-) : TypeMemberDeclarationNode
+	Dictionary<AccessLevel, DataProtection[]> protections,
+	TokenLocation location
+) : TypeMemberDeclarationNode(location)
 {
 	public readonly string Name = name;
 	public readonly TypeReferenceNode DataType = dataType;
