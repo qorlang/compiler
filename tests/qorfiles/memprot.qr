@@ -1,4 +1,4 @@
-func_ref_rwall(person: Person& [rw, *rw])
+func_ref_rwall(person: Person& $[rw, *rw])
 {
 	// we may only pass `Person [rw]` instances to this function
 	// the [rw] decl indicates we can assign a new pointer to `person`
