@@ -4,7 +4,7 @@ using QorLang.Compiler.Parser.Nodes.Expressions;
 
 namespace QorLang.Compiler.Parser.Nodes.CodeStatements;
 
-public class AssignmentStmt(
+public class SubAssignStmt(
 	Expr target,
 	Expr value,
 	TokenLocation location
@@ -15,8 +15,8 @@ public class AssignmentStmt(
 
 	public override bool Equals(object? obj)
 	{
-		if (obj is not AssignmentStmt other) return false;
-		return Target == other.Target && Value.Equals(other.Value);
+		if (obj is not SubAssignStmt other) return false;
+		return Target.Equals(other.Target) && Value.Equals(other.Value);
 	}
 
 	public override int GetHashCode()
@@ -24,5 +24,5 @@ public class AssignmentStmt(
 		return HashCode.Combine(Target, Value);
 	}
 
-	public override string ToString() => JsonSerializer.Serialize(new { type = nameof(AssignmentStmt), name = Target, value = JsonDocument.Parse(Value.ToString()).RootElement });
+	public override string ToString() => JsonSerializer.Serialize(new { type = nameof(SubAssignStmt), target = JsonDocument.Parse(Target.ToString()).RootElement, value = JsonDocument.Parse(Value.ToString()).RootElement });
 }

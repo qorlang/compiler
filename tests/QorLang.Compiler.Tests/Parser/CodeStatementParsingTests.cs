@@ -171,7 +171,7 @@ public class CodeStatementParsingTests
 
 		Assert.Empty(errors);
 		var funcNode = Assert.IsType<FunctionDefinitionNode>(nodes.First());
-		var stmt = Assert.IsType<AssignmentStmt>(funcNode.Body.First());
+		var stmt = Assert.IsType<AssignStmt>(funcNode.Body.First());
 		var target = Assert.IsType<NameReferenceExpr>(stmt.Target);
 		var value = Assert.IsType<IntegerLiteralExpr>(stmt.Value);
 		Assert.Equal("x", target.Name);
@@ -192,7 +192,7 @@ public class CodeStatementParsingTests
 
 		Assert.Empty(errors);
 		var funcNode = Assert.IsType<FunctionDefinitionNode>(nodes.First());
-		var stmt = Assert.IsType<AssignmentStmt>(funcNode.Body.First());
+		var stmt = Assert.IsType<AssignStmt>(funcNode.Body.First());
 		var target = Assert.IsType<NameReferenceExpr>(stmt.Target);
 		Assert.IsType<AddExpr>(stmt.Value);
 		Assert.Equal("result", target.Name);
@@ -212,7 +212,7 @@ public class CodeStatementParsingTests
 
 		Assert.Empty(errors);
 		var funcNode = Assert.IsType<FunctionDefinitionNode>(nodes.First());
-		var stmt = Assert.IsType<AssignmentStmt>(funcNode.Body.First());
+		var stmt = Assert.IsType<AssignStmt>(funcNode.Body.First());
 		var target = Assert.IsType<DotExpr>(stmt.Target);
 		Assert.Equal("some_field", target.PropertyName);
 		var value = Assert.IsType<IntegerLiteralExpr>(stmt.Value);
@@ -233,7 +233,7 @@ public class CodeStatementParsingTests
 
 		Assert.Empty(errors);
 		var funcNode = Assert.IsType<FunctionDefinitionNode>(nodes.First());
-		var stmt = Assert.IsType<AssignmentStmt>(funcNode.Body.First());
+		var stmt = Assert.IsType<AssignStmt>(funcNode.Body.First());
 		var target = Assert.IsType<IndexExpr>(stmt.Target);
 		var indexValue = Assert.IsType<IntegerLiteralExpr>(target.Index);
 		Assert.Equal("0", indexValue.Value);
@@ -253,7 +253,7 @@ public class CodeStatementParsingTests
 
 		Assert.Empty(errors);
 		var funcNode = Assert.IsType<FunctionDefinitionNode>(nodes.First());
-		var stmt = Assert.IsType<AssignmentStmt>(funcNode.Body.First());
+		var stmt = Assert.IsType<AssignStmt>(funcNode.Body.First());
 		var target = Assert.IsType<DotExpr>(stmt.Target);
 		Assert.Equal("some_field", target.PropertyName);
 		var baseObj = Assert.IsType<DotExpr>(target.Target);
@@ -554,7 +554,7 @@ public class CodeStatementParsingTests
 		Assert.Equal(5, funcNode.Body.Length);
 		
 		Assert.IsType<LocalDeclarationStmt>(funcNode.Body[0]);
-		Assert.IsType<AssignmentStmt>(funcNode.Body[1]);
+		Assert.IsType<AssignStmt>(funcNode.Body[1]);
 		Assert.IsType<ExprStmt>(funcNode.Body[2]);
 		Assert.IsType<ExprStmt>(funcNode.Body[3]);
 		Assert.IsType<ReturnStmt>(funcNode.Body[4]);
@@ -585,8 +585,8 @@ public class CodeStatementParsingTests
 		var decl2 = Assert.IsType<LocalDeclarationStmt>(funcNode.Body[1]);
 		Assert.Equal("b", decl2.Name);
 		
-		Assert.IsType<AssignmentStmt>(funcNode.Body[2]);
-		Assert.IsType<AssignmentStmt>(funcNode.Body[3]);
+		Assert.IsType<AssignStmt>(funcNode.Body[2]);
+		Assert.IsType<AssignStmt>(funcNode.Body[3]);
 	}
 
 	#endregion
@@ -839,8 +839,8 @@ public class CodeStatementParsingTests
 		{
 			if (flag)
 			{
-				x: i32 = 10;
-				y: i32 = 20;
+				let x: i32 = 10;
+				let y: i32 = 20;
 				z = x + y;
 			}
 		}
@@ -962,7 +962,7 @@ public class CodeStatementParsingTests
 		var code = """
 		main()
 		{
-			for (i: i32 = 0; i < 10; i++)
+			for (let i: i32 = 0; i < 10; i++)
 			{
 				result = result + i;
 			}
@@ -986,7 +986,7 @@ public class CodeStatementParsingTests
 		var code = """
 		main()
 		{
-			for (i: i32 = 0; i < 10; i++)
+			for (let i: i32 = 0; i < 10; i++)
 			{
 				x = arr[i];
 				sum = sum + x;
@@ -1009,7 +1009,7 @@ public class CodeStatementParsingTests
 		var code = """
 		main()
 		{
-			for (i: i32 = 0; i < items.length; i++)
+			for (let i: i32 = 0; i < items.length; i++)
 			{
 				if (items[i] == target)
 				{
@@ -1033,9 +1033,9 @@ public class CodeStatementParsingTests
 		var code = """
 		main()
 		{
-			for (i: i32 = 0; i < rows; i++)
+			for (let i: i32 = 0; i < rows; i++)
 			{
-				for (j: i32 = 0; j < cols; j++)
+				for (let j: i32 = 0; j < cols; j++)
 				{
 					matrix[i][j] = 0;
 				}

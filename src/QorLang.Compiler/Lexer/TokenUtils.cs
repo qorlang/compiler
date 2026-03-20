@@ -2,8 +2,22 @@ using System.Text.Json;
 
 namespace QorLang.Compiler.Lexer;
 
-public static class TokenRepr
+public static class TokenUtils
 {
+	public static bool IsAssignmentOperator(TokenType tokenType)
+	{
+		return tokenType switch
+		{
+			TokenType.Assign => true,
+			TokenType.AddAssign => true,
+			TokenType.SubAssign => true,
+			TokenType.MulAssign => true,
+			TokenType.DivAssign => true,
+			TokenType.ModAssign => true,
+			_ => false
+		};
+	}
+
 	public static string ToString(Token token)
 	{
 		return token.Type switch

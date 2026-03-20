@@ -5,16 +5,16 @@ using QorLang.Compiler.Parser.Nodes.Expressions;
 namespace QorLang.Compiler.Parser.Nodes.CodeStatements;
 
 public class ForStmt(
-	CodeStmt initializer,
+	CodeStmt? initializer,
 	Expr? condition,
-	Expr? increment,
+	CodeStmt? increment,
 	CodeStmt[] body,
 	TokenLocation location
 ) : CodeStmt(location)
 {
 	public readonly CodeStmt? Initializer = initializer;
 	public readonly Expr? Condition = condition;
-	public readonly Expr? Increment = increment;
+	public readonly CodeStmt? Increment = increment;
 	public readonly CodeStmt[] Body = body;
 
 	public override bool Equals(object? obj)

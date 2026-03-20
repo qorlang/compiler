@@ -28,7 +28,7 @@ public class ExpressionParsingTests
 
 		Assert.Empty(errors);
 		var funcNode = Assert.IsType<FunctionDefinitionNode>(nodes.First());
-		var stmt = Assert.IsType<AssignmentStmt>(funcNode.Body.First());
+		var stmt = Assert.IsType<AssignStmt>(funcNode.Body.First());
 		var expr = Assert.IsType<IntegerLiteralExpr>(stmt.Value);
 
 		Assert.Equal(value, expr.Value);
@@ -53,7 +53,7 @@ public class ExpressionParsingTests
 
 		Assert.Empty(errors);
 		var funcNode = Assert.IsType<FunctionDefinitionNode>(nodes.First());
-		var stmt = Assert.IsType<AssignmentStmt>(funcNode.Body.First());
+		var stmt = Assert.IsType<AssignStmt>(funcNode.Body.First());
 		var expr = Assert.IsType<FloatLiteralExpr>(stmt.Value);
 
 		Assert.Equal(value, expr.Value);
@@ -77,7 +77,7 @@ public class ExpressionParsingTests
 
 		Assert.Empty(errors);
 		var funcNode = Assert.IsType<FunctionDefinitionNode>(nodes.First());
-		var stmt = Assert.IsType<AssignmentStmt>(funcNode.Body.First());
+		var stmt = Assert.IsType<AssignStmt>(funcNode.Body.First());
 		var expr = Assert.IsType<StringLiteralExpr>(stmt.Value);
 
 		Assert.Equal(JsonDocument.Parse(value).RootElement.GetString(), expr.Value);
@@ -100,7 +100,7 @@ public class ExpressionParsingTests
 
 		Assert.Empty(errors);
 		var funcNode = Assert.IsType<FunctionDefinitionNode>(nodes.First());
-		var stmt = Assert.IsType<AssignmentStmt>(funcNode.Body.First());
+		var stmt = Assert.IsType<AssignStmt>(funcNode.Body.First());
 		var expr = Assert.IsType<CharLiteralExpr>(stmt.Value);
 
 		Assert.Equal(value.ToString(), expr.Value);
@@ -122,7 +122,7 @@ public class ExpressionParsingTests
 
 		Assert.Empty(errors);
 		var funcNode = Assert.IsType<FunctionDefinitionNode>(nodes.First());
-		var stmt = Assert.IsType<AssignmentStmt>(funcNode.Body.First());
+		var stmt = Assert.IsType<AssignStmt>(funcNode.Body.First());
 		var expr = Assert.IsType<BooleanLiteralExpr>(stmt.Value);
 
 		Assert.Equal(value, expr.Value);
@@ -146,7 +146,7 @@ public class ExpressionParsingTests
 
 		Assert.Empty(errors);
 		var funcNode = Assert.IsType<FunctionDefinitionNode>(nodes.First());
-		var stmt = Assert.IsType<AssignmentStmt>(funcNode.Body.First());
+		var stmt = Assert.IsType<AssignStmt>(funcNode.Body.First());
 		var expr = Assert.IsType<NameReferenceExpr>(stmt.Value);
 
 		Assert.Equal("myVar", expr.Name);
@@ -167,7 +167,7 @@ public class ExpressionParsingTests
 
 		Assert.Empty(errors);
 		var funcNode = Assert.IsType<FunctionDefinitionNode>(nodes.First());
-		var stmt = Assert.IsType<AssignmentStmt>(funcNode.Body.First());
+		var stmt = Assert.IsType<AssignStmt>(funcNode.Body.First());
 		var expr = Assert.IsType<NameReferenceExpr>(stmt.Value);
 
 		Assert.Equal("Vec", expr.Name);
@@ -188,7 +188,7 @@ public class ExpressionParsingTests
 
 		Assert.Empty(errors);
 		var funcNode = Assert.IsType<FunctionDefinitionNode>(nodes.First());
-		var stmt = Assert.IsType<AssignmentStmt>(funcNode.Body.First());
+		var stmt = Assert.IsType<AssignStmt>(funcNode.Body.First());
 		var expr = Assert.IsType<NameReferenceExpr>(stmt.Value);
 
 		Assert.Equal("Map", expr.Name);
@@ -209,7 +209,7 @@ public class ExpressionParsingTests
 
 		Assert.Empty(errors);
 		var funcNode = Assert.IsType<FunctionDefinitionNode>(nodes.First());
-		var stmt = Assert.IsType<AssignmentStmt>(funcNode.Body.First());
+		var stmt = Assert.IsType<AssignStmt>(funcNode.Body.First());
 		var expr = stmt.Value;
 
 		Assert.IsType<ThisExpr>(expr);
@@ -233,7 +233,7 @@ public class ExpressionParsingTests
 
 		Assert.Empty(errors);
 		var funcNode = Assert.IsType<FunctionDefinitionNode>(nodes.First());
-		var stmt = Assert.IsType<AssignmentStmt>(funcNode.Body.First());
+		var stmt = Assert.IsType<AssignStmt>(funcNode.Body.First());
 		var expr = Assert.IsType<AddExpr>(stmt.Value);
 
 		Assert.IsType<IntegerLiteralExpr>(expr.Left);
@@ -254,7 +254,7 @@ public class ExpressionParsingTests
 
 		Assert.Empty(errors);
 		var funcNode = Assert.IsType<FunctionDefinitionNode>(nodes.First());
-		var stmt = Assert.IsType<AssignmentStmt>(funcNode.Body.First());
+		var stmt = Assert.IsType<AssignStmt>(funcNode.Body.First());
 		var expr = Assert.IsType<SubExpr>(stmt.Value);
 
 		Assert.IsType<IntegerLiteralExpr>(expr.Left);
@@ -275,7 +275,7 @@ public class ExpressionParsingTests
 
 		Assert.Empty(errors);
 		var funcNode = Assert.IsType<FunctionDefinitionNode>(nodes.First());
-		var stmt = Assert.IsType<AssignmentStmt>(funcNode.Body.First());
+		var stmt = Assert.IsType<AssignStmt>(funcNode.Body.First());
 		var expr = Assert.IsType<MulExpr>(stmt.Value);
 
 		Assert.IsType<IntegerLiteralExpr>(expr.Left);
@@ -296,7 +296,7 @@ public class ExpressionParsingTests
 
 		Assert.Empty(errors);
 		var funcNode = Assert.IsType<FunctionDefinitionNode>(nodes.First());
-		var stmt = Assert.IsType<AssignmentStmt>(funcNode.Body.First());
+		var stmt = Assert.IsType<AssignStmt>(funcNode.Body.First());
 		var expr = Assert.IsType<DivExpr>(stmt.Value);
 
 		Assert.IsType<IntegerLiteralExpr>(expr.Left);
@@ -317,7 +317,7 @@ public class ExpressionParsingTests
 
 		Assert.Empty(errors);
 		var funcNode = Assert.IsType<FunctionDefinitionNode>(nodes.First());
-		var stmt = Assert.IsType<AssignmentStmt>(funcNode.Body.First());
+		var stmt = Assert.IsType<AssignStmt>(funcNode.Body.First());
 		var expr = Assert.IsType<ModExpr>(stmt.Value);
 
 		Assert.IsType<IntegerLiteralExpr>(expr.Left);
@@ -338,7 +338,7 @@ public class ExpressionParsingTests
 
 		Assert.Empty(errors);
 		var funcNode = Assert.IsType<FunctionDefinitionNode>(nodes.First());
-		var stmt = Assert.IsType<AssignmentStmt>(funcNode.Body.First());
+		var stmt = Assert.IsType<AssignStmt>(funcNode.Body.First());
 		var expr = Assert.IsType<AddExpr>(stmt.Value);
 
 		Assert.IsType<IntegerLiteralExpr>(expr.Left);
@@ -363,7 +363,7 @@ public class ExpressionParsingTests
 
 		Assert.Empty(errors);
 		var funcNode = Assert.IsType<FunctionDefinitionNode>(nodes.First());
-		var stmt = Assert.IsType<AssignmentStmt>(funcNode.Body.First());
+		var stmt = Assert.IsType<AssignStmt>(funcNode.Body.First());
 		var expr = Assert.IsType<BitwiseAndExpr>(stmt.Value);
 
 		Assert.IsType<IntegerLiteralExpr>(expr.Left);
@@ -384,7 +384,7 @@ public class ExpressionParsingTests
 
 		Assert.Empty(errors);
 		var funcNode = Assert.IsType<FunctionDefinitionNode>(nodes.First());
-		var stmt = Assert.IsType<AssignmentStmt>(funcNode.Body.First());
+		var stmt = Assert.IsType<AssignStmt>(funcNode.Body.First());
 		var expr = Assert.IsType<BitwiseOrExpr>(stmt.Value);
 
 		Assert.IsType<IntegerLiteralExpr>(expr.Left);
@@ -405,7 +405,7 @@ public class ExpressionParsingTests
 
 		Assert.Empty(errors);
 		var funcNode = Assert.IsType<FunctionDefinitionNode>(nodes.First());
-		var stmt = Assert.IsType<AssignmentStmt>(funcNode.Body.First());
+		var stmt = Assert.IsType<AssignStmt>(funcNode.Body.First());
 		var expr = Assert.IsType<BitwiseXorExpr>(stmt.Value);
 
 		Assert.IsType<IntegerLiteralExpr>(expr.Left);
@@ -426,7 +426,7 @@ public class ExpressionParsingTests
 
 		Assert.Empty(errors);
 		var funcNode = Assert.IsType<FunctionDefinitionNode>(nodes.First());
-		var stmt = Assert.IsType<AssignmentStmt>(funcNode.Body.First());
+		var stmt = Assert.IsType<AssignStmt>(funcNode.Body.First());
 		var expr = Assert.IsType<LeftShiftExpr>(stmt.Value);
 
 		Assert.IsType<IntegerLiteralExpr>(expr.Left);
@@ -447,7 +447,7 @@ public class ExpressionParsingTests
 
 		Assert.Empty(errors);
 		var funcNode = Assert.IsType<FunctionDefinitionNode>(nodes.First());
-		var stmt = Assert.IsType<AssignmentStmt>(funcNode.Body.First());
+		var stmt = Assert.IsType<AssignStmt>(funcNode.Body.First());
 		var expr = Assert.IsType<RightShiftExpr>(stmt.Value);
 
 		Assert.IsType<IntegerLiteralExpr>(expr.Left);
@@ -472,7 +472,7 @@ public class ExpressionParsingTests
 
 		Assert.Empty(errors);
 		var funcNode = Assert.IsType<FunctionDefinitionNode>(nodes.First());
-		var stmt = Assert.IsType<AssignmentStmt>(funcNode.Body.First());
+		var stmt = Assert.IsType<AssignStmt>(funcNode.Body.First());
 		var expr = Assert.IsType<LogicalAndExpr>(stmt.Value);
 	}
 
@@ -490,7 +490,7 @@ public class ExpressionParsingTests
 
 		Assert.Empty(errors);
 		var funcNode = Assert.IsType<FunctionDefinitionNode>(nodes.First());
-		var stmt = Assert.IsType<AssignmentStmt>(funcNode.Body.First());
+		var stmt = Assert.IsType<AssignStmt>(funcNode.Body.First());
 		var expr = Assert.IsType<LogicalOrExpr>(stmt.Value);
 	}
 
@@ -512,7 +512,7 @@ public class ExpressionParsingTests
 
 		Assert.Empty(errors);
 		var funcNode = Assert.IsType<FunctionDefinitionNode>(nodes.First());
-		var stmt = Assert.IsType<AssignmentStmt>(funcNode.Body.First());
+		var stmt = Assert.IsType<AssignStmt>(funcNode.Body.First());
 		var expr = Assert.IsType<EqualExpr>(stmt.Value);
 
 		Assert.IsType<IntegerLiteralExpr>(expr.Left);
@@ -533,7 +533,7 @@ public class ExpressionParsingTests
 
 		Assert.Empty(errors);
 		var funcNode = Assert.IsType<FunctionDefinitionNode>(nodes.First());
-		var stmt = Assert.IsType<AssignmentStmt>(funcNode.Body.First());
+		var stmt = Assert.IsType<AssignStmt>(funcNode.Body.First());
 		var expr = Assert.IsType<NotEqualExpr>(stmt.Value);
 
 		Assert.IsType<IntegerLiteralExpr>(expr.Left);
@@ -554,7 +554,7 @@ public class ExpressionParsingTests
 
 		Assert.Empty(errors);
 		var funcNode = Assert.IsType<FunctionDefinitionNode>(nodes.First());
-		var stmt = Assert.IsType<AssignmentStmt>(funcNode.Body.First());
+		var stmt = Assert.IsType<AssignStmt>(funcNode.Body.First());
 		var expr = Assert.IsType<LessThanExpr>(stmt.Value);
 
 		Assert.IsType<IntegerLiteralExpr>(expr.Left);
@@ -575,7 +575,7 @@ public class ExpressionParsingTests
 
 		Assert.Empty(errors);
 		var funcNode = Assert.IsType<FunctionDefinitionNode>(nodes.First());
-		var stmt = Assert.IsType<AssignmentStmt>(funcNode.Body.First());
+		var stmt = Assert.IsType<AssignStmt>(funcNode.Body.First());
 		var expr = Assert.IsType<LessThanEqualExpr>(stmt.Value);
 
 		Assert.IsType<IntegerLiteralExpr>(expr.Left);
@@ -596,7 +596,7 @@ public class ExpressionParsingTests
 
 		Assert.Empty(errors);
 		var funcNode = Assert.IsType<FunctionDefinitionNode>(nodes.First());
-		var stmt = Assert.IsType<AssignmentStmt>(funcNode.Body.First());
+		var stmt = Assert.IsType<AssignStmt>(funcNode.Body.First());
 		var expr = Assert.IsType<GreaterThanExpr>(stmt.Value);
 
 		Assert.IsType<IntegerLiteralExpr>(expr.Left);
@@ -617,7 +617,7 @@ public class ExpressionParsingTests
 
 		Assert.Empty(errors);
 		var funcNode = Assert.IsType<FunctionDefinitionNode>(nodes.First());
-		var stmt = Assert.IsType<AssignmentStmt>(funcNode.Body.First());
+		var stmt = Assert.IsType<AssignStmt>(funcNode.Body.First());
 		var expr = Assert.IsType<GreaterThanEqualExpr>(stmt.Value);
 
 		Assert.IsType<IntegerLiteralExpr>(expr.Left);
@@ -642,7 +642,7 @@ public class ExpressionParsingTests
 
 		Assert.Empty(errors);
 		var funcNode = Assert.IsType<FunctionDefinitionNode>(nodes.First());
-		var stmt = Assert.IsType<AssignmentStmt>(funcNode.Body.First());
+		var stmt = Assert.IsType<AssignStmt>(funcNode.Body.First());
 		var expr = Assert.IsType<UnaryPlusExpr>(stmt.Value);
 
 		Assert.IsType<IntegerLiteralExpr>(expr.Target);
@@ -662,7 +662,7 @@ public class ExpressionParsingTests
 
 		Assert.Empty(errors);
 		var funcNode = Assert.IsType<FunctionDefinitionNode>(nodes.First());
-		var stmt = Assert.IsType<AssignmentStmt>(funcNode.Body.First());
+		var stmt = Assert.IsType<AssignStmt>(funcNode.Body.First());
 		var expr = Assert.IsType<UnaryMinusExpr>(stmt.Value);
 
 		Assert.IsType<IntegerLiteralExpr>(expr.Target);
@@ -682,7 +682,7 @@ public class ExpressionParsingTests
 
 		Assert.Empty(errors);
 		var funcNode = Assert.IsType<FunctionDefinitionNode>(nodes.First());
-		var stmt = Assert.IsType<AssignmentStmt>(funcNode.Body.First());
+		var stmt = Assert.IsType<AssignStmt>(funcNode.Body.First());
 		var expr = Assert.IsType<LogicalNotExpr>(stmt.Value);
 	}
 
@@ -700,7 +700,7 @@ public class ExpressionParsingTests
 
 		Assert.Empty(errors);
 		var funcNode = Assert.IsType<FunctionDefinitionNode>(nodes.First());
-		var stmt = Assert.IsType<AssignmentStmt>(funcNode.Body.First());
+		var stmt = Assert.IsType<AssignStmt>(funcNode.Body.First());
 		var expr = Assert.IsType<BitwiseNotExpr>(stmt.Value);
 
 		Assert.IsType<IntegerLiteralExpr>(expr.Target);
@@ -800,7 +800,7 @@ public class ExpressionParsingTests
 
 		Assert.Empty(errors);
 		var funcNode = Assert.IsType<FunctionDefinitionNode>(nodes.First());
-		var stmt = Assert.IsType<AssignmentStmt>(funcNode.Body.First());
+		var stmt = Assert.IsType<AssignStmt>(funcNode.Body.First());
 		var expr = Assert.IsType<RefExpr>(stmt.Value);
 
 		Assert.IsType<NameReferenceExpr>(expr.Target);
@@ -820,7 +820,7 @@ public class ExpressionParsingTests
 
 		Assert.Empty(errors);
 		var funcNode = Assert.IsType<FunctionDefinitionNode>(nodes.First());
-		var stmt = Assert.IsType<AssignmentStmt>(funcNode.Body.First());
+		var stmt = Assert.IsType<AssignStmt>(funcNode.Body.First());
 		var expr = Assert.IsType<DerefExpr>(stmt.Value);
 
 		Assert.IsType<NameReferenceExpr>(expr.Target);
@@ -844,7 +844,7 @@ public class ExpressionParsingTests
 
 		Assert.Empty(errors);
 		var funcNode = Assert.IsType<FunctionDefinitionNode>(nodes.First());
-		var stmt = Assert.IsType<AssignmentStmt>(funcNode.Body.First());
+		var stmt = Assert.IsType<AssignStmt>(funcNode.Body.First());
 		var expr = Assert.IsType<DotExpr>(stmt.Value);
 
 		Assert.Equal("some_field", expr.PropertyName);
@@ -866,7 +866,7 @@ public class ExpressionParsingTests
 
 		Assert.Empty(errors);
 		var funcNode = Assert.IsType<FunctionDefinitionNode>(nodes.First());
-		var stmt = Assert.IsType<AssignmentStmt>(funcNode.Body.First());
+		var stmt = Assert.IsType<AssignStmt>(funcNode.Body.First());
 		var expr = Assert.IsType<DotExpr>(stmt.Value);
 
 		Assert.Equal("Method", expr.PropertyName);
@@ -887,7 +887,7 @@ public class ExpressionParsingTests
 
 		Assert.Empty(errors);
 		var funcNode = Assert.IsType<FunctionDefinitionNode>(nodes.First());
-		var stmt = Assert.IsType<AssignmentStmt>(funcNode.Body.First());
+		var stmt = Assert.IsType<AssignStmt>(funcNode.Body.First());
 		var expr = Assert.IsType<DotExpr>(stmt.Value);
 
 		Assert.Equal("field2", expr.PropertyName);
@@ -915,7 +915,7 @@ public class ExpressionParsingTests
 
 		Assert.Empty(errors);
 		var funcNode = Assert.IsType<FunctionDefinitionNode>(nodes.First());
-		var stmt = Assert.IsType<AssignmentStmt>(funcNode.Body.First());
+		var stmt = Assert.IsType<AssignStmt>(funcNode.Body.First());
 		var expr = Assert.IsType<IndexExpr>(stmt.Value);
 
 		Assert.IsType<NameReferenceExpr>(expr.Target);
@@ -936,7 +936,7 @@ public class ExpressionParsingTests
 
 		Assert.Empty(errors);
 		var funcNode = Assert.IsType<FunctionDefinitionNode>(nodes.First());
-		var stmt = Assert.IsType<AssignmentStmt>(funcNode.Body.First());
+		var stmt = Assert.IsType<AssignStmt>(funcNode.Body.First());
 		var expr = Assert.IsType<IndexExpr>(stmt.Value);
 
 		Assert.IsType<NameReferenceExpr>(expr.Index);
@@ -956,7 +956,7 @@ public class ExpressionParsingTests
 
 		Assert.Empty(errors);
 		var funcNode = Assert.IsType<FunctionDefinitionNode>(nodes.First());
-		var stmt = Assert.IsType<AssignmentStmt>(funcNode.Body.First());
+		var stmt = Assert.IsType<AssignStmt>(funcNode.Body.First());
 		var expr = Assert.IsType<IndexExpr>(stmt.Value);
 
 		Assert.IsType<IndexExpr>(expr.Target);
@@ -1088,7 +1088,7 @@ public class ExpressionParsingTests
 
 		Assert.Empty(errors);
 		var funcNode = Assert.IsType<FunctionDefinitionNode>(nodes.First());
-		var stmt = Assert.IsType<AssignmentStmt>(funcNode.Body.First());
+		var stmt = Assert.IsType<AssignStmt>(funcNode.Body.First());
 		var expr = Assert.IsType<AddExpr>(stmt.Value);
 
 		Assert.IsType<MulExpr>(expr.Right);
@@ -1108,7 +1108,7 @@ public class ExpressionParsingTests
 
 		Assert.Empty(errors);
 		var funcNode = Assert.IsType<FunctionDefinitionNode>(nodes.First());
-		var stmt = Assert.IsType<AssignmentStmt>(funcNode.Body.First());
+		var stmt = Assert.IsType<AssignStmt>(funcNode.Body.First());
 		var expr = Assert.IsType<BitwiseAndExpr>(stmt.Value);
 
 		Assert.IsType<LessThanExpr>(expr.Left);
@@ -1129,7 +1129,7 @@ public class ExpressionParsingTests
 
 		Assert.Empty(errors);
 		var funcNode = Assert.IsType<FunctionDefinitionNode>(nodes.First());
-		var stmt = Assert.IsType<AssignmentStmt>(funcNode.Body.First());
+		var stmt = Assert.IsType<AssignStmt>(funcNode.Body.First());
 		var expr = Assert.IsType<LogicalOrExpr>(stmt.Value);
 
 		Assert.IsType<LogicalAndExpr>(expr.Left);
@@ -1149,7 +1149,7 @@ public class ExpressionParsingTests
 
 		Assert.Empty(errors);
 		var funcNode = Assert.IsType<FunctionDefinitionNode>(nodes.First());
-		var stmt = Assert.IsType<AssignmentStmt>(funcNode.Body.First());
+		var stmt = Assert.IsType<AssignStmt>(funcNode.Body.First());
 	}
 
 	[Fact]
@@ -1166,7 +1166,7 @@ public class ExpressionParsingTests
 
 		Assert.Empty(errors);
 		var funcNode = Assert.IsType<FunctionDefinitionNode>(nodes.First());
-		var stmt = Assert.IsType<AssignmentStmt>(funcNode.Body.First());
+		var stmt = Assert.IsType<AssignStmt>(funcNode.Body.First());
 		var expr = Assert.IsType<MulExpr>(stmt.Value);
 
 		Assert.IsType<UnaryMinusExpr>(expr.Left);
@@ -1190,7 +1190,7 @@ public class ExpressionParsingTests
 
 		Assert.Empty(errors);
 		var funcNode = Assert.IsType<FunctionDefinitionNode>(nodes.First());
-		var stmt = Assert.IsType<AssignmentStmt>(funcNode.Body.First());
+		var stmt = Assert.IsType<AssignStmt>(funcNode.Body.First());
 
 		Assert.IsType<IntegerLiteralExpr>(stmt.Value);
 	}
@@ -1209,7 +1209,7 @@ public class ExpressionParsingTests
 
 		Assert.Empty(errors);
 		var funcNode = Assert.IsType<FunctionDefinitionNode>(nodes.First());
-		var stmt = Assert.IsType<AssignmentStmt>(funcNode.Body.First());
+		var stmt = Assert.IsType<AssignStmt>(funcNode.Body.First());
 		var expr = Assert.IsType<MulExpr>(stmt.Value);
 
 		Assert.IsType<AddExpr>(expr.Left);
@@ -1255,7 +1255,7 @@ public class ExpressionParsingTests
 
 		Assert.Empty(errors);
 		var funcNode = Assert.IsType<FunctionDefinitionNode>(nodes.First());
-		var stmt = Assert.IsType<AssignmentStmt>(funcNode.Body.First());
+		var stmt = Assert.IsType<AssignStmt>(funcNode.Body.First());
 		var expr = Assert.IsType<DotExpr>(stmt.Value);
 
 		Assert.IsType<IndexExpr>(expr.Target);
@@ -1275,7 +1275,7 @@ public class ExpressionParsingTests
 
 		Assert.Empty(errors);
 		var funcNode = Assert.IsType<FunctionDefinitionNode>(nodes.First());
-		var stmt = Assert.IsType<AssignmentStmt>(funcNode.Body.First());
+		var stmt = Assert.IsType<AssignStmt>(funcNode.Body.First());
 		var expr = Assert.IsType<IndexExpr>(stmt.Value);
 
 		Assert.IsType<CallExpr>(expr.Target);
@@ -1295,7 +1295,7 @@ public class ExpressionParsingTests
 
 		Assert.Empty(errors);
 		var funcNode = Assert.IsType<FunctionDefinitionNode>(nodes.First());
-		var stmt = Assert.IsType<AssignmentStmt>(funcNode.Body.First());
+		var stmt = Assert.IsType<AssignStmt>(funcNode.Body.First());
 		var expr = Assert.IsType<DerefExpr>(stmt.Value);
 
 		Assert.IsType<RefExpr>(expr.Target);
@@ -1368,7 +1368,7 @@ public class ExpressionParsingTests
 
 		Assert.Empty(errors);
 		var funcNode = Assert.IsType<FunctionDefinitionNode>(nodes.First());
-		var stmt = Assert.IsType<AssignmentStmt>(funcNode.Body.First());
+		var stmt = Assert.IsType<AssignStmt>(funcNode.Body.First());
 		var expr = Assert.IsType<NameReferenceExpr>(stmt.Value);
 
 		Assert.Equal("Dict", expr.Name);
@@ -1389,7 +1389,7 @@ public class ExpressionParsingTests
 
 		Assert.Empty(errors);
 		var funcNode = Assert.IsType<FunctionDefinitionNode>(nodes.First());
-		var stmt = Assert.IsType<AssignmentStmt>(funcNode.Body.First());
+		var stmt = Assert.IsType<AssignStmt>(funcNode.Body.First());
 		var expr = Assert.IsType<DotExpr>(stmt.Value);
 
 		Assert.Equal("Alloc", expr.PropertyName);
@@ -1414,7 +1414,7 @@ public class ExpressionParsingTests
 
 		Assert.Empty(errors);
 		var funcNode = Assert.IsType<FunctionDefinitionNode>(nodes.First());
-		var stmt = Assert.IsType<AssignmentStmt>(funcNode.Body.First());
+		var stmt = Assert.IsType<AssignStmt>(funcNode.Body.First());
 		var expr = Assert.IsType<MulExpr>(stmt.Value);
 
 		Assert.IsType<AddExpr>(expr.Left);
@@ -1434,7 +1434,7 @@ public class ExpressionParsingTests
 
 		Assert.Empty(errors);
 		var funcNode = Assert.IsType<FunctionDefinitionNode>(nodes.First());
-		var stmt = Assert.IsType<AssignmentStmt>(funcNode.Body.First());
+		var stmt = Assert.IsType<AssignStmt>(funcNode.Body.First());
 		var expr = Assert.IsType<UnaryMinusExpr>(stmt.Value);
 
 		Assert.IsType<UnaryPlusExpr>(expr.Target);
@@ -1454,7 +1454,7 @@ public class ExpressionParsingTests
 
 		Assert.Empty(errors);
 		var funcNode = Assert.IsType<FunctionDefinitionNode>(nodes.First());
-		var stmt = Assert.IsType<AssignmentStmt>(funcNode.Body.First());
+		var stmt = Assert.IsType<AssignStmt>(funcNode.Body.First());
 		var expr = Assert.IsType<SubExpr>(stmt.Value);
 
 		var addExpr = Assert.IsType<AddExpr>(expr.Left);
@@ -1476,7 +1476,7 @@ public class ExpressionParsingTests
 
 		Assert.Empty(errors);
 		var funcNode = Assert.IsType<FunctionDefinitionNode>(nodes.First());
-		var stmt = Assert.IsType<AssignmentStmt>(funcNode.Body.First());
+		var stmt = Assert.IsType<AssignStmt>(funcNode.Body.First());
 		var expr = Assert.IsType<LogicalOrExpr>(stmt.Value);
 
 		Assert.IsType<BitwiseOrExpr>(expr.Left);
@@ -1496,7 +1496,7 @@ public class ExpressionParsingTests
 
 		Assert.Empty(errors);
 		var funcNode = Assert.IsType<FunctionDefinitionNode>(nodes.First());
-		var stmt = Assert.IsType<AssignmentStmt>(funcNode.Body.First());
+		var stmt = Assert.IsType<AssignStmt>(funcNode.Body.First());
 		var expr = Assert.IsType<GreaterThanExpr>(stmt.Value);
 
 		Assert.IsType<LeftShiftExpr>(expr.Left);
@@ -1517,7 +1517,7 @@ public class ExpressionParsingTests
 
 		Assert.Empty(errors);
 		var funcNode = Assert.IsType<FunctionDefinitionNode>(nodes.First());
-		var stmt = Assert.IsType<AssignmentStmt>(funcNode.Body.First());
+		var stmt = Assert.IsType<AssignStmt>(funcNode.Body.First());
 		var expr = Assert.IsType<LogicalNotExpr>(stmt.Value);
 
 		Assert.IsType<LogicalNotExpr>(expr.Target);
@@ -1537,7 +1537,7 @@ public class ExpressionParsingTests
 
 		Assert.Empty(errors);
 		var funcNode = Assert.IsType<FunctionDefinitionNode>(nodes.First());
-		var stmt = Assert.IsType<AssignmentStmt>(funcNode.Body.First());
+		var stmt = Assert.IsType<AssignStmt>(funcNode.Body.First());
 		var expr = Assert.IsType<AddExpr>(stmt.Value);
 
 		Assert.IsType<UnaryMinusExpr>(expr.Left);
@@ -1557,7 +1557,7 @@ public class ExpressionParsingTests
 
 		Assert.Empty(errors);
 		var funcNode = Assert.IsType<FunctionDefinitionNode>(nodes.First());
-		var stmt = Assert.IsType<AssignmentStmt>(funcNode.Body.First());
+		var stmt = Assert.IsType<AssignStmt>(funcNode.Body.First());
 		var expr = Assert.IsType<LogicalAndExpr>(stmt.Value);
 
 		Assert.IsType<LessThanExpr>(expr.Left);
@@ -1578,7 +1578,7 @@ public class ExpressionParsingTests
 
 		Assert.Empty(errors);
 		var funcNode = Assert.IsType<FunctionDefinitionNode>(nodes.First());
-		var stmt = Assert.IsType<AssignmentStmt>(funcNode.Body.First());
+		var stmt = Assert.IsType<AssignStmt>(funcNode.Body.First());
 		var expr = Assert.IsType<BitwiseXorExpr>(stmt.Value);
 
 		Assert.IsType<EqualExpr>(expr.Left);

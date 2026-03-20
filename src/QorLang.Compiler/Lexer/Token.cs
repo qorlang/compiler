@@ -8,7 +8,7 @@ public readonly struct Token(TokenType type, string value, TokenLocation positio
 
 	public override string ToString()
 	{
-		return $"{Type}: {TokenRepr.ToString(this)} ({Location})";
+		return $"{Type}: {TokenUtils.ToString(this)} ({Location})";
 	}
 }
 

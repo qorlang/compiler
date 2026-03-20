@@ -25,14 +25,14 @@ public class DefaultParser(IEnumerable<Token> tokens)
 		if (_currentTokenIndex < _tokens.Length)
 		{
 			var token = _tokens[_currentTokenIndex];
-			
+
 			if (token.Type == TokenType.ErrorToken)
 			{
 				_errors.Add(GenerateError(token.Value, token));
 				_currentTokenIndex++;
 				return GetNextToken();
 			}
-			
+
 			_currentTokenIndex++;
 			return token;
 		}
@@ -45,6 +45,8 @@ public class DefaultParser(IEnumerable<Token> tokens)
 	int SaveParserPosition() => _currentTokenIndex;
 
 	void RestoreParserPosition(int position) => _currentTokenIndex = position;
+
+	void PushBackLastToken() => _currentTokenIndex = Math.Max(0, _currentTokenIndex - 1);
 
 	void SkipToNextStatement()
 	{
@@ -104,7 +106,7 @@ public class DefaultParser(IEnumerable<Token> tokens)
 
 		if (token.Type != expectedType)
 		{
-			_errors.Add(GenerateError($"Error QR202: Expected {TokenRepr.ToString(expectedType)}, but got {TokenRepr.ToString(token.Type)} instead.", token));
+			_errors.Add(GenerateError($"Error QR202: Expected {TokenUtils.ToString(expectedType)}, but got {TokenUtils.ToString(token.Type)} instead.", token));
 
 			return false;
 		}
@@ -123,7 +125,7 @@ public class DefaultParser(IEnumerable<Token> tokens)
 
 		if (token.Type != TokenType.Keyword || token.Value != expectedKeyword)
 		{
-			_errors.Add(GenerateError($"Error QR202: Expected keyword '{expectedKeyword}', but got {TokenRepr.ToString(token)} instead.", token));
+			_errors.Add(GenerateError($"Error QR202: Expected keyword '{expectedKeyword}', but got {TokenUtils.ToString(token)} instead.", token));
 
 			return false;
 		}
@@ -166,7 +168,7 @@ public class DefaultParser(IEnumerable<Token> tokens)
 			{
 				if (currToken.Type != TokenType.Semicolon)
 				{
-					_errors.Add(GenerateError($"Error QR202: Expected '.' or ';' in namespace declaration, but got {TokenRepr.ToString(currToken)} instead.", currToken));
+					_errors.Add(GenerateError($"Error QR202: Expected '.' or ';' in namespace declaration, but got {TokenUtils.ToString(currToken)} instead.", currToken));
 
 					return ErrorOutOfCurrentContext();
 				}
@@ -198,7 +200,7 @@ public class DefaultParser(IEnumerable<Token> tokens)
 			{
 				if (currToken.Type != TokenType.Semicolon)
 				{
-					_errors.Add(GenerateError($"Error QR202: Expected '.' or ';' in using statement, but got {TokenRepr.ToString(currToken)} instead.", currToken));
+					_errors.Add(GenerateError($"Error QR202: Expected '.' or ';' in using statement, but got {TokenUtils.ToString(currToken)} instead.", currToken));
 
 					return ErrorOutOfCurrentContext();
 				}
@@ -215,7 +217,7 @@ public class DefaultParser(IEnumerable<Token> tokens)
 	/// </summary>
 	/// <returns></returns>
 	DataProtection[]? ParseSimpleProtectionList(int maxRefLevel, bool allowReadOnly = false)
-	{		
+	{
 		var setProtections = new bool[maxRefLevel + 1];
 		var protections = new DataProtection[maxRefLevel + 1];
 
@@ -250,7 +252,7 @@ public class DefaultParser(IEnumerable<Token> tokens)
 
 			if (nextToken.Type != TokenType.Keyword)
 			{
-				_errors.Add(GenerateError($"Error QR202: Expected protection modifier in data protection list, but got {TokenRepr.ToString(nextToken)} instead.", nextToken));
+				_errors.Add(GenerateError($"Error QR202: Expected protection modifier in data protection list, but got {TokenUtils.ToString(nextToken)} instead.", nextToken));
 
 				return null;
 			}
@@ -272,7 +274,7 @@ public class DefaultParser(IEnumerable<Token> tokens)
 				}
 				else
 				{
-					_errors.Add(GenerateError($"Error QR202: Expected ',' or ']' after protection modifier, but got {TokenRepr.ToString(tokenAfterProtDef)} instead.", tokenAfterProtDef));
+					_errors.Add(GenerateError($"Error QR202: Expected ',' or ']' after protection modifier, but got {TokenUtils.ToString(tokenAfterProtDef)} instead.", tokenAfterProtDef));
 
 					return null;
 				}
@@ -301,7 +303,7 @@ public class DefaultParser(IEnumerable<Token> tokens)
 				}
 				else
 				{
-					_errors.Add(GenerateError($"Error QR202: Expected ',' or ']' after protection modifier, but got {TokenRepr.ToString(tokenAfterProtDef)} instead.", tokenAfterProtDef));
+					_errors.Add(GenerateError($"Error QR202: Expected ',' or ']' after protection modifier, but got {TokenUtils.ToString(tokenAfterProtDef)} instead.", tokenAfterProtDef));
 
 					return null;
 				}
@@ -358,7 +360,7 @@ public class DefaultParser(IEnumerable<Token> tokens)
 				}
 				else
 				{
-					_errors.Add(GenerateError($"Error QR202: Expected ',' or '}}' after public protection definition, but got {TokenRepr.ToString(afterPubProtToken)} instead.", afterPubProtToken));
+					_errors.Add(GenerateError($"Error QR202: Expected ',' or '}}' after public protection definition, but got {TokenUtils.ToString(afterPubProtToken)} instead.", afterPubProtToken));
 
 					return null;
 				}
@@ -390,14 +392,14 @@ public class DefaultParser(IEnumerable<Token> tokens)
 				}
 				else
 				{
-					_errors.Add(GenerateError($"Error QR202: Expected ',' or '}}' after private protection definition, but got {TokenRepr.ToString(afterPrivProtToken)} instead.", afterPrivProtToken));
+					_errors.Add(GenerateError($"Error QR202: Expected ',' or '}}' after private protection definition, but got {TokenUtils.ToString(afterPrivProtToken)} instead.", afterPrivProtToken));
 
 					return null;
 				}
 			}
 			else
 			{
-				_errors.Add(GenerateError($"Error QR202: Expected 'pub' or '[' in protection definition, but got {TokenRepr.ToString(nextToken)} instead.", nextToken));
+				_errors.Add(GenerateError($"Error QR202: Expected 'pub' or '[' in protection definition, but got {TokenUtils.ToString(nextToken)} instead.", nextToken));
 
 				return null;
 			}
@@ -452,12 +454,12 @@ public class DefaultParser(IEnumerable<Token> tokens)
 			}
 
 			currToken = GetNextToken();
-			
+
 			goto AfterTypeResolved;
 		}
 		else
 		{
-			_errors.Add(GenerateError($"Error QR202: Expected type name, but got {TokenRepr.ToString(token)} instead.", token));
+			_errors.Add(GenerateError($"Error QR202: Expected type name, but got {TokenUtils.ToString(token)} instead.", token));
 
 			return (ErrorOutOfCurrentContext(), default);
 		}
@@ -498,7 +500,7 @@ public class DefaultParser(IEnumerable<Token> tokens)
 				}
 				else
 				{
-					_errors.Add(GenerateError($"Error QR202: Expected ',' or '>' in generic argument list, but got {TokenRepr.ToString(currToken)} instead.", currToken));
+					_errors.Add(GenerateError($"Error QR202: Expected ',' or '>' in generic argument list, but got {TokenUtils.ToString(currToken)} instead.", currToken));
 
 					return (ErrorOutOfCurrentContext(), default);
 				}
@@ -518,12 +520,12 @@ public class DefaultParser(IEnumerable<Token> tokens)
 			else if (currToken.Type == TokenType.LeftBracket)
 			{
 				indirectionLayers.Add(IndirectionLayer.ArrayOf);
-				
+
 				if (!ExpectNextToken(TokenType.RightBracket)) return (ErrorOutOfCurrentContext(), default);
 			}
 			else
 			{
-				break; 
+				break;
 			}
 
 			currToken = GetNextToken();
@@ -564,7 +566,7 @@ public class DefaultParser(IEnumerable<Token> tokens)
 			}
 			else
 			{
-				_errors.Add(GenerateError($"Error QR202: Expected ',' or '>' in type argument list, but got {TokenRepr.ToString(nextToken)} instead.", nextToken));
+				_errors.Add(GenerateError($"Error QR202: Expected ',' or '>' in type argument list, but got {TokenUtils.ToString(nextToken)} instead.", nextToken));
 				return (null, nextToken);
 			}
 		}
@@ -613,7 +615,7 @@ public class DefaultParser(IEnumerable<Token> tokens)
 	(Expr Expr, Token NextToken) ParseLogicalOr(Token firstToken)
 	{
 		var (left, token) = ParseLogicalAnd(firstToken);
-		
+
 		while (true)
 		{
 			if (token.Type == TokenType.Or)
@@ -633,7 +635,7 @@ public class DefaultParser(IEnumerable<Token> tokens)
 	(Expr Expr, Token NextToken) ParseLogicalAnd(Token firstToken)
 	{
 		var (left, token) = ParseBitwiseOr(firstToken);
-		
+
 		while (true)
 		{
 			if (token.Type == TokenType.Ampersand)
@@ -666,7 +668,7 @@ public class DefaultParser(IEnumerable<Token> tokens)
 	(Expr Expr, Token NextToken) ParseBitwiseOr(Token firstToken)
 	{
 		var (left, token) = ParseBitwiseXor(firstToken);
-		
+
 		while (true)
 		{
 			if (token.Type == TokenType.BitwiseOr)
@@ -686,7 +688,7 @@ public class DefaultParser(IEnumerable<Token> tokens)
 	(Expr Expr, Token NextToken) ParseBitwiseXor(Token firstToken)
 	{
 		var (left, token) = ParseBitwiseAnd(firstToken);
-		
+
 		while (true)
 		{
 			if (token.Type == TokenType.BitwiseXor)
@@ -706,7 +708,7 @@ public class DefaultParser(IEnumerable<Token> tokens)
 	(Expr Expr, Token NextToken) ParseBitwiseAnd(Token firstToken)
 	{
 		var (left, token) = ParseEquality(firstToken);
-		
+
 		while (true)
 		{
 			if (token.Type == TokenType.Ampersand)
@@ -735,7 +737,7 @@ public class DefaultParser(IEnumerable<Token> tokens)
 	(Expr Expr, Token NextToken) ParseEquality(Token firstToken)
 	{
 		var (left, token) = ParseRelational(firstToken);
-		
+
 		while (true)
 		{
 			if (token.Type == TokenType.Eq)
@@ -761,7 +763,7 @@ public class DefaultParser(IEnumerable<Token> tokens)
 	(Expr Expr, Token NextToken) ParseRelational(Token firstToken)
 	{
 		var (left, token) = ParseShift(firstToken);
-		
+
 		while (true)
 		{
 			if (token.Type == TokenType.LessThan)
@@ -812,7 +814,7 @@ public class DefaultParser(IEnumerable<Token> tokens)
 	(Expr Expr, Token NextToken) ParseShift(Token firstToken)
 	{
 		var (left, token) = ParseAdditive(firstToken);
-		
+
 		while (true)
 		{
 			if (token.Type == TokenType.LeftShift)
@@ -850,7 +852,7 @@ public class DefaultParser(IEnumerable<Token> tokens)
 	(Expr Expr, Token NextToken) ParseAdditive(Token firstToken)
 	{
 		var (left, token) = ParseMultiplicative(firstToken);
-		
+
 		while (true)
 		{
 			if (token.Type == TokenType.Add)
@@ -876,7 +878,7 @@ public class DefaultParser(IEnumerable<Token> tokens)
 	(Expr Expr, Token NextToken) ParseMultiplicative(Token firstToken)
 	{
 		var (left, token) = ParseUnary(firstToken);
-		
+
 		while (true)
 		{
 			if (token.Type == TokenType.Asterisk)
@@ -957,7 +959,7 @@ public class DefaultParser(IEnumerable<Token> tokens)
 	(Expr Expr, Token NextToken) ParsePostfix(Token token)
 	{
 		var (expr, nextToken) = ParsePrimary(token);
-		
+
 		while (true)
 		{
 			if (nextToken.Type == TokenType.Increment)
@@ -975,7 +977,7 @@ public class DefaultParser(IEnumerable<Token> tokens)
 				var (index, afterIndex) = ParseLogicalOr(GetNextToken());
 				if (afterIndex.Type != TokenType.RightBracket)
 				{
-					_errors.Add(GenerateError($"Error QR202: Expected ']', but got {TokenRepr.ToString(afterIndex)} instead.", afterIndex));
+					_errors.Add(GenerateError($"Error QR202: Expected ']', but got {TokenUtils.ToString(afterIndex)} instead.", afterIndex));
 					return (new ErrorExpr(), afterIndex);
 				}
 				expr = new IndexExpr(expr, index, nextToken.Location);
@@ -1005,7 +1007,7 @@ public class DefaultParser(IEnumerable<Token> tokens)
 						}
 						else
 						{
-							_errors.Add(GenerateError($"Error QR202: Expected ',' or ')' in function call, but got {TokenRepr.ToString(nextToken)} instead.", nextToken));
+							_errors.Add(GenerateError($"Error QR202: Expected ',' or ')' in function call, but got {TokenUtils.ToString(nextToken)} instead.", nextToken));
 							return (new ErrorExpr(), nextToken);
 						}
 					}
@@ -1047,7 +1049,7 @@ public class DefaultParser(IEnumerable<Token> tokens)
 						expr = new DotExpr(expr, memberName, [], dotToken.Location);
 						return (expr, nextToken);
 					}
-					
+
 					typeArgs = parsedArgs;
 					nextToken = afterTypeArgs;
 				}
@@ -1134,14 +1136,14 @@ public class DefaultParser(IEnumerable<Token> tokens)
 			var (expr, afterParen) = ParseLogicalOr(GetNextToken());
 			if (afterParen.Type != TokenType.RightParen)
 			{
-				_errors.Add(GenerateError($"Error QR202: Expected ')', but got {TokenRepr.ToString(afterParen)} instead.", afterParen));
+				_errors.Add(GenerateError($"Error QR202: Expected ')', but got {TokenUtils.ToString(afterParen)} instead.", afterParen));
 				return (new ErrorExpr(), afterParen);
 			}
 			return (expr, GetNextToken());
 		}
 		else
 		{
-			_errors.Add(GenerateError($"Error QR202: Expected expression, but got {TokenRepr.ToString(token)} instead.", token));
+			_errors.Add(GenerateError($"Error QR202: Expected expression, but got {TokenUtils.ToString(token)} instead.", token));
 			return (new ErrorExpr(), token);
 		}
 	}
@@ -1165,7 +1167,7 @@ public class DefaultParser(IEnumerable<Token> tokens)
 
 			if (nextToken.Type != TokenType.Semicolon)
 			{
-				_errors.Add(GenerateError($"Error QR202: Expected ';' after return statement, but got {TokenRepr.ToString(nextToken)} instead.", nextToken));
+				_errors.Add(GenerateError($"Error QR202: Expected ';' after return statement, but got {TokenUtils.ToString(nextToken)} instead.", nextToken));
 
 				return ErrorOutOfCurrentCodeStmt();
 			}
@@ -1242,10 +1244,10 @@ public class DefaultParser(IEnumerable<Token> tokens)
 
 			lastUnprocessedToken = nextToken;
 		}
-		
+
 		if (lastUnprocessedToken.Type != TokenType.Semicolon)
 		{
-			_errors.Add(GenerateError($"Error QR202: Expected  ';' after local variable declaration, but got {TokenRepr.ToString(lastUnprocessedToken)} instead.", lastUnprocessedToken));
+			_errors.Add(GenerateError($"Error QR202: Expected  ';' after local variable declaration, but got {TokenUtils.ToString(lastUnprocessedToken)} instead.", lastUnprocessedToken));
 
 			return ErrorOutOfCurrentCodeStmt();
 		}
@@ -1253,22 +1255,300 @@ public class DefaultParser(IEnumerable<Token> tokens)
 		return new LocalDeclarationStmt(nameToken.Value, typeNode, protections, initializer, nameToken.Location);
 	}
 
-	CodeStmt ParseIfStatement()
+	/// <summary>
+	/// Parses an if statement given that the last consumed token was the 'if' keyword.
+	/// </summary>
+	/// <returns></returns>
+	CodeStmt ParseIfStatement(bool isLoopBody)
 	{
-		// TODO: Implement if statement parsing
-		return ErrorOutOfCurrentCodeStmt();
+		if (!ExpectNextToken(TokenType.LeftParen, out var firstParsedToken))
+		{
+			return ErrorOutOfCurrentCodeStmt();
+		}
+
+		var (condition, nextToken) = ParseExpression(GetNextToken());
+
+		if (condition is ErrorExpr)
+		{
+			return ErrorOutOfCurrentCodeStmt();
+		}
+
+		if (nextToken.Type != TokenType.RightParen)
+		{
+			_errors.Add(GenerateError($"Error QR202: Expected ')', but got {TokenUtils.ToString(nextToken)} instead.", nextToken));
+
+			return ErrorOutOfCurrentCodeStmt();
+		}
+
+		if (!ExpectNextToken(TokenType.LeftBrace))
+		{
+			return ErrorOutOfCurrentCodeStmt();
+		}
+
+		var body = ParseBraceEnclosedBody(isLoopBody);
+
+		var possibleElseToken = GetNextToken();
+
+		if (possibleElseToken.Type == TokenType.Keyword && possibleElseToken.Value == "else")
+		{
+			var tokenAfterElse = GetNextToken();
+
+			if (tokenAfterElse.Type == TokenType.Keyword && tokenAfterElse.Value == "if")
+			{
+				// Else if - parse the else body as a single if statement
+				var elseIfStmt = ParseIfStatement(isLoopBody);
+
+				if (elseIfStmt is ErrorStmt)
+				{
+					return ErrorOutOfCurrentCodeStmt();
+				}
+
+				return new IfStmt(condition, [..body], [elseIfStmt], firstParsedToken.Location);
+			}
+			else if (tokenAfterElse.Type != TokenType.LeftBrace)
+			{
+				_errors.Add(GenerateError($"Error QR202: Expected '{{' or 'if' after 'else', but got {TokenUtils.ToString(tokenAfterElse)} instead.", tokenAfterElse));
+			}
+
+			var elseBody = ParseBraceEnclosedBody(isLoopBody);
+
+			return new IfStmt(condition, [..body], [..elseBody], firstParsedToken.Location);
+		}
+
+		// No else clause, put the token back for the next function and return the if statement without an else clause
+		PushBackLastToken();
+
+		return new IfStmt(condition, [..body], [], firstParsedToken.Location);
 	}
 
+	/// <summary>
+	/// Parses a while statement given that the last consumed token was the 'while' keyword.
+	/// </summary>
+	/// <returns></returns>
 	CodeStmt ParseWhileStatement()
 	{
-		// TODO: Implement while loop parsing
-		return ErrorOutOfCurrentCodeStmt();
+		if (!ExpectNextToken(TokenType.LeftParen, out var firstParsedToken))
+		{
+			return ErrorOutOfCurrentCodeStmt();
+		}
+
+		var (condition, nextToken) = ParseExpression(GetNextToken());
+
+		if (condition is ErrorExpr)
+		{
+			return ErrorOutOfCurrentCodeStmt();
+		}
+
+		if (nextToken.Type != TokenType.RightParen)
+		{
+			_errors.Add(GenerateError($"Error QR202: Expected ')', but got {TokenUtils.ToString(nextToken)} instead.", nextToken));
+
+			return ErrorOutOfCurrentCodeStmt();
+		}
+
+		if (!ExpectNextToken(TokenType.LeftBrace))
+		{
+			return ErrorOutOfCurrentCodeStmt();
+		}
+
+		var body = ParseBraceEnclosedBody(isLoopBody: true);
+
+		return new WhileStmt(condition, [..body], firstParsedToken.Location);
 	}
 
+	/// <summary>
+	/// Parses a for statement given that the last consumed token was the 'for' keyword.S
+	/// </summary>
+	/// <returns></returns>
 	CodeStmt ParseForStatement()
 	{
-		// TODO: Implement for loop parsing
-		return ErrorOutOfCurrentCodeStmt();
+		if (!ExpectNextToken(TokenType.LeftParen, out var firstParsedToken))
+		{
+			return ErrorOutOfCurrentCodeStmt();
+		}
+
+		CodeStmt? initializer = null;
+
+		var nextToken = GetNextToken();
+
+		if (nextToken.Type == TokenType.Semicolon)
+		{
+			// No initializer
+		}
+		else if (nextToken.Type == TokenType.Keyword && nextToken.Value == "let")
+		{
+			// Local variable declaration initializer
+			var localDecl = ParseLocalDeclaration();
+
+			if (localDecl is ErrorStmt)
+			{
+				return ErrorOutOfCurrentCodeStmt();
+			}
+
+			initializer = localDecl;
+		}
+		else
+		{
+			// Assignment initializer
+
+			var (leftExpr, afterLeft) = ParseExpression(nextToken);
+
+			if (leftExpr is ErrorExpr)
+			{
+				return ErrorOutOfCurrentCodeStmt();
+			}
+
+			if (leftExpr is not NameReferenceExpr)
+			{
+				_errors.Add(GenerateError($"Error QR203: Invalid for loop initializer. Only direct assignments to identifiers are allowed.", nextToken));
+
+				return ErrorOutOfCurrentCodeStmt();
+			}
+
+			if (!TokenUtils.IsAssignmentOperator(afterLeft.Type))
+			{
+				_errors.Add(GenerateError($"Error QR202: Expected '=' in for loop initializer, but got {TokenUtils.ToString(afterLeft)} instead.", afterLeft));
+
+				return ErrorOutOfCurrentCodeStmt();
+			}
+
+			var assignmentType = afterLeft.Type;
+
+			var (rightExpr, afterRight) = ParseExpression(GetNextToken());
+
+			if (rightExpr is ErrorExpr)
+			{
+				return ErrorOutOfCurrentCodeStmt();
+			}
+
+			if (afterRight.Type != TokenType.Semicolon)
+			{
+				_errors.Add(GenerateError($"Error QR202: Expected ';' after for loop initializer, but got {TokenUtils.ToString(afterRight)} instead.", afterRight));
+
+				return ErrorOutOfCurrentCodeStmt();
+			}
+
+			initializer = assignmentType switch
+			{
+				TokenType.Assign => new AssignStmt(leftExpr, rightExpr, nextToken.Location),
+				TokenType.AddAssign => new AddAssignStmt(leftExpr, rightExpr, nextToken.Location),
+				TokenType.SubAssign => new SubAssignStmt(leftExpr, rightExpr, nextToken.Location),
+				TokenType.MulAssign => new MulAssignStmt(leftExpr, rightExpr, nextToken.Location),
+				TokenType.DivAssign => new DivAssignStmt(leftExpr, rightExpr, nextToken.Location),
+				TokenType.ModAssign => new ModAssignStmt(leftExpr, rightExpr, nextToken.Location),
+				_ => throw new Exception("Unreachable code: Unrecognized assignment operator in for loop initializer.")
+			};
+		}
+
+		Expr? condition = null;
+
+		nextToken = GetNextToken();
+
+		if (nextToken.Type == TokenType.Semicolon)
+		{
+			// No condition
+		}
+		else
+		{
+			var (conditionExpr, afterCondition) = ParseExpression(nextToken);
+
+			if (conditionExpr is ErrorExpr)
+			{
+				return ErrorOutOfCurrentCodeStmt();
+			}
+
+			if (afterCondition.Type != TokenType.Semicolon)
+			{
+				_errors.Add(GenerateError($"Error QR202: Expected ';' after for loop condition, but got {TokenUtils.ToString(afterCondition)} instead.", afterCondition));
+
+				return ErrorOutOfCurrentCodeStmt();
+			}
+
+			condition = conditionExpr;
+		}
+
+		CodeStmt? increment = null;
+
+		nextToken = GetNextToken();
+
+		if (nextToken.Type == TokenType.RightParen)
+		{
+			// No increment
+		}
+		else
+		{
+			var (incrementExpr, afterIncrement) = ParseExpression(nextToken);
+
+			if (incrementExpr is ErrorExpr)
+			{
+				return ErrorOutOfCurrentCodeStmt();
+			}
+
+			if (afterIncrement.Type == TokenType.RightParen)
+			{
+				if (incrementExpr is not CallExpr and not PostIncrementExpr and not PostDecrementExpr and not PreIncrementExpr and not PreDecrementExpr)
+				{
+					_errors.Add(GenerateError($"Error QR220: Only function call, increment, and decrement expressions may be used as for loop increments.", nextToken));
+
+					return ErrorOutOfCurrentCodeStmt();
+				}
+
+				increment = new ExprStmt(incrementExpr);
+			}
+			else if (TokenUtils.IsAssignmentOperator(afterIncrement.Type))
+			{
+				if (incrementExpr is not NameReferenceExpr and not DotExpr and not IndexExpr)
+				{
+					_errors.Add(GenerateError($"Error QR203: Invalid for loop increment. Invalid assignment target. Only indentifiers, member accesses, and array indexing expressions can be assigned to.", nextToken));
+
+					return ErrorOutOfCurrentCodeStmt();
+				}
+
+				var assignmentType = afterIncrement.Type;
+
+				var (rightExpr, afterRight) = ParseExpression(GetNextToken());
+
+				if (rightExpr is ErrorExpr)
+				{
+					return ErrorOutOfCurrentCodeStmt();
+				}
+
+				if (afterRight.Type != TokenType.RightParen)
+				{
+					_errors.Add(GenerateError($"Error QR202: Expected ')' after for loop increment expression, but got {TokenUtils.ToString(afterRight)} instead.", afterRight));
+
+					return ErrorOutOfCurrentCodeStmt();
+				}
+
+				increment = assignmentType switch
+				{
+					TokenType.Assign => new AssignStmt(incrementExpr, rightExpr, nextToken.Location),
+					TokenType.AddAssign => new AddAssignStmt(incrementExpr, rightExpr, nextToken.Location),
+					TokenType.SubAssign => new SubAssignStmt(incrementExpr, rightExpr, nextToken.Location),
+					TokenType.MulAssign => new MulAssignStmt(incrementExpr, rightExpr, nextToken.Location),
+					TokenType.DivAssign => new DivAssignStmt(incrementExpr, rightExpr, nextToken.Location),
+					TokenType.ModAssign => new ModAssignStmt(incrementExpr, rightExpr, nextToken.Location),
+					_ => throw new Exception("Unreachable code: Unrecognized assignment operator in for loop increment.")
+				};
+			}
+			else
+			{
+				_errors.Add(GenerateError($"Error QR202: Expected ';' or ')' after for loop increment expression, but got {TokenUtils.ToString(afterIncrement)} instead.", afterIncrement));
+
+				return ErrorOutOfCurrentCodeStmt();
+			}
+		}
+
+		// the right paren should be handled, let's parse the body
+
+		if (!ExpectNextToken(TokenType.LeftBrace))
+		{
+			return ErrorOutOfCurrentCodeStmt();
+		}
+
+		var body = ParseBraceEnclosedBody(isLoopBody: true);
+
+		return new ForStmt(initializer, condition, increment, [..body], firstParsedToken.Location);
 	}
 
 	/// <summary>
@@ -1310,7 +1590,7 @@ public class DefaultParser(IEnumerable<Token> tokens)
 				}
 				else if (token.Value == "if")
 				{
-					var ifStmt = ParseIfStatement();
+					var ifStmt = ParseIfStatement(isLoopBody);
 
 					statements.Add(ifStmt);
 				}
@@ -1337,6 +1617,13 @@ public class DefaultParser(IEnumerable<Token> tokens)
 						continue;
 					}
 
+					if (!ExpectNextToken(TokenType.Semicolon))
+					{
+						SkipToNextStatement();
+
+						continue;
+					}
+
 					statements.Add(new BreakStmt(token.Location));
 				}
 				else if (token.Value == "continue")
@@ -1345,6 +1632,13 @@ public class DefaultParser(IEnumerable<Token> tokens)
 					{
 						_errors.Add(GenerateError($"Error QR217: 'continue' statements may only be used within loops.", token));
 
+						SkipToNextStatement();
+
+						continue;
+					}
+
+					if (!ExpectNextToken(TokenType.Semicolon))
+					{
 						SkipToNextStatement();
 
 						continue;
@@ -1380,17 +1674,30 @@ public class DefaultParser(IEnumerable<Token> tokens)
 				}
 
 				// Check for assignment: DotExpr, NameReferenceExpr, or IndexExpr followed by =
-				if (nextToken.Type == TokenType.Assign && 
+				if (TokenUtils.IsAssignmentOperator(nextToken.Type) &&
 					(expr is DotExpr or NameReferenceExpr or IndexExpr))
 				{
+					var assignmentType = nextToken.Type;
+
 					var (rhs, postExprToken) = ParseExpression(GetNextToken());
 
 					if (rhs is not ErrorExpr)
 					{
-						statements.Add(new AssignmentStmt(expr, rhs, nextToken.Location));
+						statements.Add(
+							assignmentType switch
+							{
+								TokenType.Assign => new AssignStmt(expr, rhs, nextToken.Location),
+								TokenType.AddAssign => new AddAssignStmt(expr, rhs, nextToken.Location),
+								TokenType.SubAssign => new SubAssignStmt(expr, rhs, nextToken.Location),
+								TokenType.MulAssign => new MulAssignStmt(expr, rhs, nextToken.Location),
+								TokenType.DivAssign => new DivAssignStmt(expr, rhs, nextToken.Location),
+								TokenType.ModAssign => new ModAssignStmt(expr, rhs, nextToken.Location),
+								_ => throw new Exception($"Unexpected assignment operator {assignmentType}")
+							}
+						);
 						if (postExprToken.Type != TokenType.Semicolon)
 						{
-							_errors.Add(GenerateError($"Error QR202: Expected ';', but got {TokenRepr.ToString(postExprToken)} instead.", postExprToken));
+							_errors.Add(GenerateError($"Error QR202: Expected ';', but got {TokenUtils.ToString(postExprToken)} instead.", postExprToken));
 
 							SkipToNextStatement();
 						}
@@ -1404,25 +1711,25 @@ public class DefaultParser(IEnumerable<Token> tokens)
 				{
 					var exprStmt = new ExprStmt(expr);
 					statements.Add(exprStmt);
-					
+
 					if (nextToken.Type != TokenType.Semicolon)
 					{
-						_errors.Add(GenerateError($"Error QR202: Expected ';', but got {TokenRepr.ToString(nextToken)} instead.", nextToken));
+						_errors.Add(GenerateError($"Error QR202: Expected ';', but got {TokenUtils.ToString(nextToken)} instead.", nextToken));
 						SkipToNextStatement();
 					}
 				}
 				else if (nextToken.Type == TokenType.Assign)
 				{
-					_errors.Add(GenerateError($"Error QR203: Invalid assignment target. Only identifiers, member accesses, and array indexing can be assigned to.", token));
+					_errors.Add(GenerateError($"Error QR203: Invalid assignment target. Only identifiers, member accesses, and array indexing expressions can be assigned to.", token));
 					SkipToNextStatement();
 				}
 				else
 				{
-					_errors.Add(GenerateError($"Error QR203: Only function call, increment, and decrement expressions may be converted to statements.", token));
-					
+					_errors.Add(GenerateError($"Error QR220: Only function call, increment, and decrement expressions may be converted to statements.", token));
+
 					if (nextToken.Type != TokenType.Semicolon)
 					{
-						_errors.Add(GenerateError($"Error QR202: Expected ';', but got {TokenRepr.ToString(nextToken)} instead.", nextToken));
+						_errors.Add(GenerateError($"Error QR202: Expected ';', but got {TokenUtils.ToString(nextToken)} instead.", nextToken));
 						SkipToNextStatement();
 					}
 				}
@@ -1456,7 +1763,7 @@ public class DefaultParser(IEnumerable<Token> tokens)
 
 				if (typeParamToken.Type != TokenType.Identifier)
 				{
-					_errors.Add(GenerateError($"Error QR202: Expected identifier in type parameter list, but got {TokenRepr.ToString(typeParamToken)} instead.", typeParamToken));
+					_errors.Add(GenerateError($"Error QR202: Expected identifier in type parameter list, but got {TokenUtils.ToString(typeParamToken)} instead.", typeParamToken));
 
 					return ErrorOutOfCurrentContext();
 				}
@@ -1475,7 +1782,7 @@ public class DefaultParser(IEnumerable<Token> tokens)
 				}
 				else
 				{
-					_errors.Add(GenerateError($"Error QR202: Expected ',' or '>' in type parameter list, but got {TokenRepr.ToString(nextToken)} instead.", nextToken));
+					_errors.Add(GenerateError($"Error QR202: Expected ',' or '>' in type parameter list, but got {TokenUtils.ToString(nextToken)} instead.", nextToken));
 
 					return ErrorOutOfCurrentContext();
 				}
@@ -1490,7 +1797,7 @@ public class DefaultParser(IEnumerable<Token> tokens)
 		{
 			if (token.Type != TokenType.LeftParen)
 			{
-				_errors.Add(GenerateError($"Error QR202: Expected '<' or '(' after function name, but got {TokenRepr.ToString(token)} instead.", token));
+				_errors.Add(GenerateError($"Error QR202: Expected '<' or '(' after function name, but got {TokenUtils.ToString(token)} instead.", token));
 
 				return ErrorOutOfCurrentContext();
 			}
@@ -1524,14 +1831,14 @@ public class DefaultParser(IEnumerable<Token> tokens)
 				}
 				else
 				{
-					_errors.Add(GenerateError($"Error QR202: Expected ',' or ')' after parameter declaration, but got {TokenRepr.ToString(nextToken)} instead.", nextToken));
+					_errors.Add(GenerateError($"Error QR202: Expected ',' or ')' after parameter declaration, but got {TokenUtils.ToString(nextToken)} instead.", nextToken));
 
 					return ErrorOutOfCurrentContext();
 				}
 			}
 			else
 			{
-				_errors.Add(GenerateError($"Error QR202: Expected identifier or ')' in parameter list, got {TokenRepr.ToString(token)}.", token));
+				_errors.Add(GenerateError($"Error QR202: Expected identifier or ')' in parameter list, got {TokenUtils.ToString(token)}.", token));
 
 				return ErrorOutOfCurrentContext();
 			}
@@ -1563,7 +1870,7 @@ public class DefaultParser(IEnumerable<Token> tokens)
 
 			if (tokenAfterParamList.Type != TokenType.LeftBrace)
 			{
-				_errors.Add(GenerateError($"Error QR202: Expected ':' or '{{' after parameter list, but got {TokenRepr.ToString(tokenAfterParamList)} instead.", tokenAfterParamList));
+				_errors.Add(GenerateError($"Error QR202: Expected ':' or '{{' after parameter list, but got {TokenUtils.ToString(tokenAfterParamList)} instead.", tokenAfterParamList));
 
 				return ErrorOutOfCurrentContext();
 			}
@@ -1578,7 +1885,7 @@ public class DefaultParser(IEnumerable<Token> tokens)
 
 			if (lastUnprocessedToken.Type != TokenType.LeftBrace)
 			{
-				_errors.Add(GenerateError($"Error QR202: Expected '{{' after return type, but got {TokenRepr.ToString(lastUnprocessedToken)} instead.", lastUnprocessedToken));
+				_errors.Add(GenerateError($"Error QR202: Expected '{{' after return type, but got {TokenUtils.ToString(lastUnprocessedToken)} instead.", lastUnprocessedToken));
 
 				return ErrorOutOfCurrentContext();
 			}
@@ -1679,15 +1986,15 @@ public class DefaultParser(IEnumerable<Token> tokens)
 
 			nextToken = lastUnprocessedToken;
 		}
-		
+
 		if (nextToken.Type != TokenType.Semicolon)
 		{
-			_errors.Add(GenerateError($"Error QR202: Expected ';' after global variable declaration, but got {TokenRepr.ToString(nextToken)} instead.", nextToken));
+			_errors.Add(GenerateError($"Error QR202: Expected ';' after global variable declaration, but got {TokenUtils.ToString(nextToken)} instead.", nextToken));
 
 			return ErrorOutOfCurrentContext();
 		}
 
-		return new FieldDeclarationNode(nameToken.Value, typeNode, protections, nameToken.Location);		
+		return new FieldDeclarationNode(nameToken.Value, typeNode, protections, nameToken.Location);
 	}
 
 	/// <summary>
@@ -1713,7 +2020,7 @@ public class DefaultParser(IEnumerable<Token> tokens)
 
 				if (typeParamToken.Type != TokenType.Identifier)
 				{
-					_errors.Add(GenerateError($"Error QR202: Expected identifier in type parameter list, but got {TokenRepr.ToString(typeParamToken)} instead.", typeParamToken));
+					_errors.Add(GenerateError($"Error QR202: Expected identifier in type parameter list, but got {TokenUtils.ToString(typeParamToken)} instead.", typeParamToken));
 
 					return ErrorOutOfCurrentContext();
 				}
@@ -1732,7 +2039,7 @@ public class DefaultParser(IEnumerable<Token> tokens)
 				}
 				else
 				{
-					_errors.Add(GenerateError($"Error QR202: Expected ',' or '>' in type parameter list, but got {TokenRepr.ToString(nextToken)} instead.", nextToken));
+					_errors.Add(GenerateError($"Error QR202: Expected ',' or '>' in type parameter list, but got {TokenUtils.ToString(nextToken)} instead.", nextToken));
 
 					return ErrorOutOfCurrentContext();
 				}
@@ -1745,7 +2052,7 @@ public class DefaultParser(IEnumerable<Token> tokens)
 		}
 		else if (token.Type != TokenType.LeftBrace)
 		{
-			_errors.Add(GenerateError($"Error QR202: Expected '<' or '{{' after type name, but got {TokenRepr.ToString(token)} instead.", token));
+			_errors.Add(GenerateError($"Error QR202: Expected '<' or '{{' after type name, but got {TokenUtils.ToString(token)} instead.", token));
 
 			return ErrorOutOfCurrentContext();
 		}
@@ -1811,7 +2118,7 @@ public class DefaultParser(IEnumerable<Token> tokens)
 			}
 			else
 			{
-				_errors.Add(GenerateError($"Error QR202: Expected declaration in type body, but got {TokenRepr.ToString(nextToken)} instead.", nextToken));
+				_errors.Add(GenerateError($"Error QR202: Expected declaration in type body, but got {TokenUtils.ToString(nextToken)} instead.", nextToken));
 
 				return ErrorOutOfCurrentCodeBlock();
 			}
@@ -1904,7 +2211,7 @@ public class DefaultParser(IEnumerable<Token> tokens)
 
 			nextToken = lastUnprocessedToken;
 		}
-				
+
 		Expr? initializer = null;
 
 		if (nextToken.Type == TokenType.Eq)
@@ -1913,10 +2220,10 @@ public class DefaultParser(IEnumerable<Token> tokens)
 
 			(initializer, nextToken) = ParseExpression(initializerToken);
 		}
-		
+
 		if (nextToken.Type != TokenType.Semicolon)
 		{
-			_errors.Add(GenerateError($"Error QR202: Expected ';' after global variable declaration, but got {TokenRepr.ToString(nextToken)} instead.", nextToken));
+			_errors.Add(GenerateError($"Error QR202: Expected ';' after global variable declaration, but got {TokenUtils.ToString(nextToken)} instead.", nextToken));
 
 			return ErrorOutOfCurrentContext();
 		}
@@ -2057,7 +2364,7 @@ public class DefaultParser(IEnumerable<Token> tokens)
 				}
 				else
 				{
-					_errors.Add(GenerateError($"Error QR210: A(n) {TokenRepr.ToString(token.Type)} may not begin a top-level statement.", token));
+					_errors.Add(GenerateError($"Error QR210: A(n) {TokenUtils.ToString(token.Type)} may not begin a top-level statement.", token));
 
 					SkipToNextStatement();
 
