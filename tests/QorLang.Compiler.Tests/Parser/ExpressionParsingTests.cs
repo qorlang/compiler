@@ -847,9 +847,9 @@ public class ExpressionParsingTests
 		var stmt = Assert.IsType<AssignStmt>(funcNode.Body.First());
 		var expr = Assert.IsType<DotExpr>(stmt.Value);
 
-		Assert.Equal("some_field", expr.PropertyName);
+		Assert.Equal("some_field", expr.Property.Name);
 		Assert.IsType<NameReferenceExpr>(expr.Target);
-		Assert.Empty(expr.TypeArguments);
+		Assert.Empty(expr.Property.TypeArguments);
 	}
 
 	[Fact]
@@ -869,8 +869,8 @@ public class ExpressionParsingTests
 		var stmt = Assert.IsType<AssignStmt>(funcNode.Body.First());
 		var expr = Assert.IsType<DotExpr>(stmt.Value);
 
-		Assert.Equal("Method", expr.PropertyName);
-		Assert.Single(expr.TypeArguments);
+		Assert.Equal("Method", expr.Property.Name);
+		Assert.Single(expr.Property.TypeArguments);
 	}
 
 	[Fact]
@@ -890,11 +890,11 @@ public class ExpressionParsingTests
 		var stmt = Assert.IsType<AssignStmt>(funcNode.Body.First());
 		var expr = Assert.IsType<DotExpr>(stmt.Value);
 
-		Assert.Equal("field2", expr.PropertyName);
+		Assert.Equal("field2", expr.Property.Name);
 		Assert.IsType<DotExpr>(expr.Target);
 
 		var innerDot = Assert.IsType<DotExpr>(expr.Target);
-		Assert.Equal("field1", innerDot.PropertyName);
+		Assert.Equal("field1", innerDot.Property.Name);
 	}
 
 	#endregion
@@ -1392,8 +1392,8 @@ public class ExpressionParsingTests
 		var stmt = Assert.IsType<AssignStmt>(funcNode.Body.First());
 		var expr = Assert.IsType<DotExpr>(stmt.Value);
 
-		Assert.Equal("Alloc", expr.PropertyName);
-		Assert.Single(expr.TypeArguments);
+		Assert.Equal("Alloc", expr.Property.Name);
+		Assert.Single(expr.Property.TypeArguments);
 	}
 
 	#endregion

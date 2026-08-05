@@ -70,7 +70,7 @@ public class CodeStatementParsingTests
 		var stmt = Assert.IsType<ExprStmt>(funcNode.Body.First());
 		var callExpr = Assert.IsType<CallExpr>(stmt.Expr);
 		var dotExpr = Assert.IsType<DotExpr>(callExpr.Target);
-		Assert.Equal("some_method", dotExpr.PropertyName);
+		Assert.Equal("some_method", dotExpr.Property.Name);
 	}
 
 	[Fact]
@@ -214,7 +214,7 @@ public class CodeStatementParsingTests
 		var funcNode = Assert.IsType<FunctionDefinitionNode>(nodes.First());
 		var stmt = Assert.IsType<AssignStmt>(funcNode.Body.First());
 		var target = Assert.IsType<DotExpr>(stmt.Target);
-		Assert.Equal("some_field", target.PropertyName);
+		Assert.Equal("some_field", target.Property.Name);
 		var value = Assert.IsType<IntegerLiteralExpr>(stmt.Value);
 		Assert.Equal("100", value.Value);
 	}
@@ -255,9 +255,9 @@ public class CodeStatementParsingTests
 		var funcNode = Assert.IsType<FunctionDefinitionNode>(nodes.First());
 		var stmt = Assert.IsType<AssignStmt>(funcNode.Body.First());
 		var target = Assert.IsType<DotExpr>(stmt.Target);
-		Assert.Equal("some_field", target.PropertyName);
+		Assert.Equal("some_field", target.Property.Name);
 		var baseObj = Assert.IsType<DotExpr>(target.Target);
-		Assert.Equal("nested", baseObj.PropertyName);
+		Assert.Equal("nested", baseObj.Property.Name);
 	}
 
 	#endregion

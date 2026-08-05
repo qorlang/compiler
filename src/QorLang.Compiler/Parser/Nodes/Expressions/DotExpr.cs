@@ -11,19 +11,18 @@ public class DotExpr(
 ) : Expr(location)
 {
 	public readonly Expr Target = target;
-	public readonly string PropertyName = propertyName;
-	public readonly TypeReferenceNode[] TypeArguments = typeArguments;
+	public readonly NameReferenceExpr Property = new(propertyName, typeArguments, location);
 
 	public override bool Equals(object? obj)
 	{
 		if (obj is not DotExpr other || obj.GetType() != GetType()) return false;
-		return Target.Equals(other.Target) && PropertyName == other.PropertyName && TypeArguments.SequenceEqual(other.TypeArguments);
+		return Target.Equals(other.Target) && Property.Name == other.Property.Name && Property.TypeArguments.SequenceEqual(other.Property.TypeArguments);
 	}
 
 	public override int GetHashCode()
 	{
-		return HashCode.Combine(Target, PropertyName, NodeUtils.GetArrayHash(TypeArguments));
+		return HashCode.Combine(Target, Property.Name, NodeUtils.GetArrayHash(Property.TypeArguments));
 	}
 
-	public override string ToString() => JsonSerializer.Serialize(new { type = nameof(DotExpr), target = JsonDocument.Parse(Target.ToString()).RootElement, propertyName = PropertyName, typeParameters = TypeArguments.Length > 0 ? TypeArguments.Select(t => JsonDocument.Parse(t.ToString()).RootElement).ToArray() : null });
+	public override string ToString() => JsonSerializer.Serialize(new { type = nameof(DotExpr), target = JsonDocument.Parse(Target.ToString()).RootElement, propertyName = Property.Name, typeParameters = Property.TypeArguments.Length > 0 ? Property.TypeArguments.Select(t => JsonDocument.Parse(t.ToString()).RootElement).ToArray() : null });
 }
