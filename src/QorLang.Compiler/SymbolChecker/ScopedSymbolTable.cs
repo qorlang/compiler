@@ -1,3 +1,5 @@
+using QorLang.Compiler.SymbolChecker.Symbols;
+
 namespace QorLang.Compiler.SymbolChecker;
 
 public class ScopedSymbolTable(
@@ -13,7 +15,7 @@ public class ScopedSymbolTable(
 
 	public void AddSymbol(Symbol symbol)
 	{
-		
+
 	}
 
 	public bool TryGetSymbol(string name, out Symbol? symbol)

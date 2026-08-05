@@ -1,3 +1,5 @@
+using QorLang.Compiler.SymbolChecker.Symbols;
+
 namespace QorLang.Compiler.SymbolChecker;
 
 public class GlobalSymbolTable
@@ -7,12 +9,12 @@ public class GlobalSymbolTable
 
 	public void AddImport(GlobalSymbolTable module)
 	{
-		
+
 	}
 
 	public void AddSymbol(Symbol symbol)
 	{
-		
+
 	}
 
 	public bool TryGetSymbol(string name, out Symbol? symbol)
