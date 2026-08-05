@@ -46,7 +46,7 @@ public class CodeStatementParsingTests
 		var funcNode = Assert.IsType<FunctionDefinitionNode>(nodes.First());
 		var stmt = Assert.IsType<ExprStmt>(funcNode.Body.First());
 		var callExpr = Assert.IsType<CallExpr>(stmt.Expr);
-		
+
 		Assert.Equal(3, callExpr.Arguments.Length);
 		Assert.IsType<IntegerLiteralExpr>(callExpr.Arguments[0]);
 		Assert.IsType<FloatLiteralExpr>(callExpr.Arguments[1]);
@@ -280,7 +280,7 @@ public class CodeStatementParsingTests
 		var funcNode = Assert.IsType<FunctionDefinitionNode>(nodes.First());
 		var stmt = Assert.IsType<LocalDeclarationStmt>(funcNode.Body.First());
 		Assert.Equal("x", stmt.Name);
-		Assert.Equal("Qor.Int32", stmt.DataType.TypeName);
+		Assert.Equal("Qor.Int32", stmt.DataType!.TypeName);
 		Assert.Null(stmt.Initializer);
 	}
 
@@ -300,7 +300,7 @@ public class CodeStatementParsingTests
 		var funcNode = Assert.IsType<FunctionDefinitionNode>(nodes.First());
 		var stmt = Assert.IsType<LocalDeclarationStmt>(funcNode.Body.First());
 		Assert.Equal("x", stmt.Name);
-		Assert.Equal("Qor.Int32", stmt.DataType.TypeName);
+		Assert.Equal("Qor.Int32", stmt.DataType!.TypeName);
 		var initValue = Assert.IsType<IntegerLiteralExpr>(stmt.Initializer);
 		Assert.Equal("42", initValue.Value);
 	}
@@ -325,6 +325,128 @@ public class CodeStatementParsingTests
 	}
 
 	[Fact]
+	public void Parse_InferredLocalDeclaration_ReturnsLocalDeclarationStmt()
+	{
+		var code = """
+		main()
+		{
+			let x = 4;
+		}
+		""";
+
+		var (nodes, errors) = TestHelper.ParseCode(code);
+
+		Assert.Empty(errors);
+		var funcNode = Assert.IsType<FunctionDefinitionNode>(nodes.First());
+		var stmt = Assert.IsType<LocalDeclarationStmt>(funcNode.Body.First());
+		Assert.Equal("x", stmt.Name);
+		Assert.True(stmt.IsInference);
+		var initValue = Assert.IsType<IntegerLiteralExpr>(stmt.Initializer);
+		Assert.Equal("4", initValue.Value);
+	}
+
+	[Fact]
+	public void Parse_InferredLocalDeclarationWithExpressionInitializer_ReturnsLocalDeclarationStmt()
+	{
+		var code = """
+		main()
+		{
+			let result = a + b * 2;
+		}
+		""";
+
+		var (nodes, errors) = TestHelper.ParseCode(code);
+
+		Assert.Empty(errors);
+		var funcNode = Assert.IsType<FunctionDefinitionNode>(nodes.First());
+		var stmt = Assert.IsType<LocalDeclarationStmt>(funcNode.Body.First());
+		Assert.Equal("result", stmt.Name);
+		Assert.True(stmt.IsInference);
+		Assert.IsType<AddExpr>(stmt.Initializer);
+	}
+
+	[Fact]
+	public void Parse_InferredLocalDeclarationWithProtection_ReturnsLocalDeclarationStmt()
+	{
+		var code = """
+		main()
+		{
+			let ptr: $[rw] = 4;
+		}
+		""";
+
+		var (nodes, errors) = TestHelper.ParseCode(code);
+
+		Assert.Empty(errors);
+		var funcNode = Assert.IsType<FunctionDefinitionNode>(nodes.First());
+		var stmt = Assert.IsType<LocalDeclarationStmt>(funcNode.Body.First());
+		Assert.Equal("ptr", stmt.Name);
+		Assert.True(stmt.IsInference);
+		Assert.NotEmpty(stmt.Protections!);
+		Assert.Equal(DataProtection.ReadWrite, stmt.Protections![0]);
+		var initValue = Assert.IsType<IntegerLiteralExpr>(stmt.Initializer);
+		Assert.Equal("4", initValue.Value);
+	}
+
+	[Fact]
+	public void Parse_InferredLocalDeclarationWithExplicitProtectionSyntax_ReturnsLocalDeclarationStmt()
+	{
+		var code = """
+		main()
+		{
+			let ptr: $[rw] = 4;
+		}
+		""";
+
+		var (nodes, errors) = TestHelper.ParseCode(code);
+
+		Assert.Empty(errors);
+		var funcNode = Assert.IsType<FunctionDefinitionNode>(nodes.First());
+		var stmt = Assert.IsType<LocalDeclarationStmt>(funcNode.Body.First());
+		Assert.Equal("ptr", stmt.Name);
+		Assert.True(stmt.IsInference);
+		Assert.NotEmpty(stmt.Protections!);
+		Assert.Equal(DataProtection.ReadWrite, stmt.Protections![0]);
+	}
+
+	[Fact]
+	public void Parse_InferredLocalDeclarationWithExpressionAndProtection_ReturnsLocalDeclarationStmt()
+	{
+		var code = """
+		main()
+		{
+			let value: $[rw] = a + b;
+		}
+		""";
+
+		var (nodes, errors) = TestHelper.ParseCode(code);
+
+		Assert.Empty(errors);
+		var funcNode = Assert.IsType<FunctionDefinitionNode>(nodes.First());
+		var stmt = Assert.IsType<LocalDeclarationStmt>(funcNode.Body.First());
+		Assert.Equal("value", stmt.Name);
+		Assert.True(stmt.IsInference);
+		Assert.NotEmpty(stmt.Protections!);
+		Assert.IsType<AddExpr>(stmt.Initializer);
+	}
+
+	[Fact]
+	public void Parse_InferredLocalDeclarationWithoutInitializer_ReturnsError()
+	{
+		var code = """
+		main()
+		{
+			let x;
+		}
+		""";
+
+		var (nodes, errors) = TestHelper.ParseCode(code);
+
+		Assert.NotEmpty(errors);
+		Assert.Contains("QR202", errors.First().Message);
+	}
+
+	[Fact]
 	public void Parse_LocalDeclarationWithRefType_ReturnsLocalDeclarationStmt()
 	{
 		var code = """
@@ -341,7 +463,7 @@ public class CodeStatementParsingTests
 		var stmt = Assert.IsType<LocalDeclarationStmt>(funcNode.Body.First());
 
 		Assert.Equal("ptr", stmt.Name);
-		Assert.Equal("Qor.Int32", stmt.DataType.TypeName);
+		Assert.Equal("Qor.Int32", stmt.DataType!.TypeName);
 		Assert.Single(stmt.DataType.IndirectionLayers);
 	}
 
@@ -362,13 +484,13 @@ public class CodeStatementParsingTests
 		Assert.Empty(errors);
 		var funcNode = Assert.IsType<FunctionDefinitionNode>(nodes.First());
 		Assert.Equal(3, funcNode.Body.Length);
-		
+
 		var stmt1 = Assert.IsType<LocalDeclarationStmt>(funcNode.Body[0]);
 		Assert.Equal("x", stmt1.Name);
-		
+
 		var stmt2 = Assert.IsType<LocalDeclarationStmt>(funcNode.Body[1]);
 		Assert.Equal("y", stmt2.Name);
-		
+
 		var stmt3 = Assert.IsType<LocalDeclarationStmt>(funcNode.Body[2]);
 		Assert.Equal("z", stmt3.Name);
 	}
@@ -389,7 +511,7 @@ public class CodeStatementParsingTests
 		var funcNode = Assert.IsType<FunctionDefinitionNode>(nodes.First());
 		var stmt = Assert.IsType<LocalDeclarationStmt>(funcNode.Body.First());
 		Assert.Equal("ptr", stmt.Name);
-		Assert.NotEmpty(stmt.Protections);
+		Assert.NotEmpty(stmt.Protections!);
 	}
 
 	#endregion
@@ -552,7 +674,7 @@ public class CodeStatementParsingTests
 		Assert.Empty(errors);
 		var funcNode = Assert.IsType<FunctionDefinitionNode>(nodes.First());
 		Assert.Equal(5, funcNode.Body.Length);
-		
+
 		Assert.IsType<LocalDeclarationStmt>(funcNode.Body[0]);
 		Assert.IsType<AssignStmt>(funcNode.Body[1]);
 		Assert.IsType<ExprStmt>(funcNode.Body[2]);
@@ -578,13 +700,13 @@ public class CodeStatementParsingTests
 		Assert.Empty(errors);
 		var funcNode = Assert.IsType<FunctionDefinitionNode>(nodes.First());
 		Assert.Equal(4, funcNode.Body.Length);
-		
+
 		var decl1 = Assert.IsType<LocalDeclarationStmt>(funcNode.Body[0]);
 		Assert.Equal("a", decl1.Name);
-		
+
 		var decl2 = Assert.IsType<LocalDeclarationStmt>(funcNode.Body[1]);
 		Assert.Equal("b", decl2.Name);
-		
+
 		Assert.IsType<AssignStmt>(funcNode.Body[2]);
 		Assert.IsType<AssignStmt>(funcNode.Body[3]);
 	}
@@ -660,9 +782,9 @@ public class CodeStatementParsingTests
 		var funcNode = Assert.IsType<FunctionDefinitionNode>(nodes.First());
 		var stmt = Assert.IsType<LocalDeclarationStmt>(funcNode.Body.First());
 		Assert.Equal("ptr", stmt.Name);
-		Assert.Equal("Qor.Int32", stmt.DataType.TypeName);
+		Assert.Equal("Qor.Int32", stmt.DataType!.TypeName);
 		Assert.Single(stmt.DataType.IndirectionLayers, IndirectionLayer.PointerTo);
-		Assert.Equal(DataProtection.ReadOnly, stmt.Protections[0]);
+		Assert.Equal(DataProtection.ReadOnly, stmt.Protections![0]);
 		Assert.Equal(DataProtection.ReadWrite, stmt.Protections[1]);
 	}
 
@@ -682,7 +804,7 @@ public class CodeStatementParsingTests
 		var funcNode = Assert.IsType<FunctionDefinitionNode>(nodes.First());
 		var stmt = Assert.IsType<LocalDeclarationStmt>(funcNode.Body.First());
 		Assert.Equal("arr", stmt.Name);
-		Assert.NotEmpty(stmt.Protections);
+		Assert.NotEmpty(stmt.Protections!);
 	}
 
 	[Fact]
@@ -701,10 +823,10 @@ public class CodeStatementParsingTests
 		var funcNode = Assert.IsType<FunctionDefinitionNode>(nodes.First());
 		var stmt = Assert.IsType<LocalDeclarationStmt>(funcNode.Body.First());
 		Assert.Equal("ptr_arr", stmt.Name);
-		Assert.Equal("Qor.Int32", stmt.DataType.TypeName);
+		Assert.Equal("Qor.Int32", stmt.DataType!.TypeName);
 		Assert.Equal(IndirectionLayer.PointerTo, stmt.DataType.IndirectionLayers[0]);
 		Assert.Equal(IndirectionLayer.ArrayOf, stmt.DataType.IndirectionLayers[1]);
-		Assert.Equal(DataProtection.ReadOnly, stmt.Protections[0]);
+		Assert.Equal(DataProtection.ReadOnly, stmt.Protections![0]);
 		Assert.Equal(DataProtection.ReadWrite, stmt.Protections[1]);
 	}
 
@@ -724,7 +846,7 @@ public class CodeStatementParsingTests
 		var funcNode = Assert.IsType<FunctionDefinitionNode>(nodes.First());
 		var stmt = Assert.IsType<LocalDeclarationStmt>(funcNode.Body.First());
 		Assert.Equal("ptr", stmt.Name);
-		Assert.NotEmpty(stmt.Protections);
+		Assert.NotEmpty(stmt.Protections!);
 		Assert.NotNull(stmt.Initializer);
 	}
 

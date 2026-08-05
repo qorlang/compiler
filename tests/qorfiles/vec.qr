@@ -9,7 +9,7 @@ pub type Vec<T>
 
 	field capacity: i32 $[rw];
 	field data: T[] $[rw];
-	
+
 	pub @ctor(size: i32)
 	{
 		this.length = 0;
@@ -33,9 +33,9 @@ pub type Vec<T>
 		{
 			let new_capacity = this.capacity + 10; // yeah just arbitrary for the example
 
-			let new_data: [rw] = Core.Array.alloc<T>(new_capacity); // the old data array gets deleted by the GC at some point if all references are lost
-			
-			// copy data into new_data and assign, etc...
+			let new_data: $[rw] = Core.Array.Alloc<T>(new_capacity); // the old data array gets deleted by the GC at some point if all references are lost
+
+			// replace data with new_data
 
 			this.data = new_data;
 		}

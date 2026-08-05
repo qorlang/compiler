@@ -1182,72 +1182,107 @@ public class DefaultParser(IEnumerable<Token> tokens)
 	/// <returns></returns>
 	CodeStmt ParseLocalDeclaration()
 	{
+		TypeReferenceNode? typeNode = null;
+		DataProtection[]? protections = null;
+		Token lastUnprocessedToken;
+
 		if (!ExpectNextToken(TokenType.Identifier, out var nameToken))
 		{
 			return ErrorOutOfCurrentCodeStmt();
 		}
 
-		if (!ExpectNextToken(TokenType.Colon))
+		var possibleColon = GetNextToken();
+
+		if (possibleColon.Type != TokenType.Colon)
 		{
-			return ErrorOutOfCurrentCodeStmt();
-		}
-
-		var (typeNodeResult, lastUnprocessedToken) = ParseTypeReference();
-
-		if (typeNodeResult is ErrorNode)
-		{
-			return ErrorOutOfCurrentCodeStmt();
-		}
-
-		var typeNode = (TypeReferenceNode) typeNodeResult;
-
-		DataProtection[] protections;
-
-		if (lastUnprocessedToken.Type == TokenType.Dollar)
-		{
-			if (!ExpectNextToken(TokenType.LeftBracket))
-			{
-				return ErrorOutOfCurrentCodeStmt();
-			}
-
-			var parsedProt = ParseSimpleProtectionList(typeNode.RefLevel);
-
-			if (parsedProt is null)
-			{
-				return ErrorOutOfCurrentCodeStmt();
-			}
-
-			protections = parsedProt;
-
-			lastUnprocessedToken = GetNextToken();
+			lastUnprocessedToken = possibleColon;
 		}
 		else
 		{
-			var defaultProtections = new DataProtection[typeNode.RefLevel + 1];
-			Array.Fill(defaultProtections, DataProtection.ReadOnly);
+			var tokenAfterColon = GetNextToken();
+			bool isInference = false;
 
-			protections = defaultProtections;
+			if (tokenAfterColon.Type != TokenType.Dollar) // not an inference, a type follows
+			{
+				PushBackLastToken();
+
+				ASTNode typeNodeResult;
+
+				(typeNodeResult, lastUnprocessedToken) = ParseTypeReference();
+
+				if (typeNodeResult is ErrorNode)
+				{
+					return ErrorOutOfCurrentCodeStmt();
+				}
+
+				typeNode = (TypeReferenceNode) typeNodeResult;
+			}
+			else
+			{
+				lastUnprocessedToken = tokenAfterColon;
+				isInference = true;
+			}
+
+			if (lastUnprocessedToken.Type == TokenType.Dollar)
+			{
+				if (!ExpectNextToken(TokenType.LeftBracket))
+				{
+					return ErrorOutOfCurrentCodeStmt();
+				}
+
+				var parsedProt = ParseSimpleProtectionList(typeNode?.RefLevel ?? byte.MaxValue);
+
+				if (parsedProt is null)
+				{
+					return ErrorOutOfCurrentCodeStmt();
+				}
+
+				protections = parsedProt;
+
+				lastUnprocessedToken = GetNextToken();
+			}
+			else
+			{
+				DataProtection[]? defaultProtections = null;
+
+				protections = defaultProtections;
+			}
+
+			if (lastUnprocessedToken.Type == TokenType.Semicolon)
+			{
+				if (isInference)
+				{
+					_errors.Add(GenerateError($"Error QR202: Inferred local variable '{nameToken.Value}' must be followed by an assignment.", nameToken));
+
+					return ErrorOutOfCurrentCodeStmt();
+				}
+
+				return new LocalDeclarationStmt(nameToken.Value, typeNode, protections, null, nameToken.Location);
+			}
 		}
 
 		Expr? initializer = null;
 
-		if (lastUnprocessedToken.Type == TokenType.Assign)
+		if (lastUnprocessedToken.Type != TokenType.Assign)
 		{
-			var (initExpr, nextToken) = ParseExpression(GetNextToken());
-
-			if (initExpr is ErrorExpr)
-			{
-				return ErrorOutOfCurrentCodeStmt();
-			}
-
-			initializer = initExpr;
-
-			lastUnprocessedToken = nextToken;
+			_errors.Add(GenerateError($"Error QR202: Expected an assignment, but got {TokenUtils.ToString(lastUnprocessedToken)} instead.", lastUnprocessedToken));
 		}
+
+
+		var (initExpr, nextToken) = ParseExpression(GetNextToken());
+
+		if (initExpr is ErrorExpr)
+		{
+			return ErrorOutOfCurrentCodeStmt();
+		}
+
+		initializer = initExpr;
+
+		lastUnprocessedToken = nextToken;
 
 		if (lastUnprocessedToken.Type != TokenType.Semicolon)
 		{
-			_errors.Add(GenerateError($"Error QR202: Expected  ';' after local variable declaration, but got {TokenUtils.ToString(lastUnprocessedToken)} instead.", lastUnprocessedToken));
+			_errors.Add(GenerateError($"Error QR202: Expected  ';' after local variable definition, but got {TokenUtils.ToString(lastUnprocessedToken)} instead.", lastUnprocessedToken));
 
 			return ErrorOutOfCurrentCodeStmt();
 		}
