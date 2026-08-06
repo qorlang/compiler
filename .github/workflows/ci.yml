@@ -1,6 +1,12 @@
 name: QorLang Compiler CI
 
 on:
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: 'Reason for running the workflow'
+        required: false
+        default: 'Manual trigger'
   push:
     branches: [ "**" ]
   pull_request:

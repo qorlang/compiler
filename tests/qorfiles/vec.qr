@@ -1,4 +1,4 @@
-namespace Core.Collections;
+namespace Qor.Collections;
 
 pub type Vec<T>
 {
@@ -13,7 +13,7 @@ pub type Vec<T>
 	pub @ctor(size: i32)
 	{
 		this.length = 0;
-		this.data = Core.Array.Alloc<T>(size);
+		this.data = Qor.Collections.ArrayAlloc<T>(size);
 		this.capacity = data.length;
 	}
 
@@ -33,7 +33,7 @@ pub type Vec<T>
 		{
 			let new_capacity = this.capacity + 10; // yeah just arbitrary for the example
 
-			let new_data: $[rw] = Core.Array.Alloc<T>(new_capacity); // the old data array gets deleted by the GC at some point if all references are lost
+			let new_data: $[rw] = Qor.Collections.ArrayAlloc<T>(new_capacity); // the old data array gets deleted by the GC at some point if all references are lost
 
 			// replace data with new_data
 
@@ -47,6 +47,6 @@ pub type Vec<T>
 
 	pub getref(idx: i32) : T&
 	{
-		return &this.data[idx]; // illegal: cannot take address of array element (simplifies gc search and also why would you ever need to do this? just use a Core.Array.ArrayView<T>)
+		return &this.data[idx]; // illegal: cannot take address of array element (simplifies gc search and also why would you ever need to do this? just use a Qor.Collections.ArrayView<T>)
 	}
 }
