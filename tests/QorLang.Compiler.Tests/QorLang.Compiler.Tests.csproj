@@ -1,11 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
-
   <PropertyGroup>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <OutputType>Exe</OutputType>
     <RootNamespace>QorLang.Compiler.Tests</RootNamespace>
-    <TargetFramework>net10.0</TargetFramework>
+    <TargetFramework>net11.0</TargetFramework>
     <TestingPlatformDotnetTestSupport>true</TestingPlatformDotnetTestSupport>
   </PropertyGroup>
 
@@ -24,5 +23,4 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\QorLang.Compiler\QorLang.Compiler.csproj" />
   </ItemGroup>
-
 </Project>
