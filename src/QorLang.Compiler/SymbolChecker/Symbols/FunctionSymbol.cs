@@ -1,11 +1,18 @@
+using QorLang.Compiler.SymbolChecker.SymbolReferences;
+using QorLang.Compiler.Parser.Nodes;
+
 namespace QorLang.Compiler.SymbolChecker.Symbols;
 
-public class FunctionSymbol(SymbolType type, TypeReference returnType, string[] typeArgumentNames, string name, ArgumentOrLocalSymbol[] signature) : Symbol(type)
+public class FunctionSymbol(
+	string name,
+	TypeReference returnType,
+	string[] typeArgumentNames,
+	ArgumentOrLocalSymbol[] signature,
+	AccessLevel accessLevel,
+	string namespaceName
+) : FunctionOrMethodSymbol(SymbolType.Function, name, returnType, typeArgumentNames, signature, accessLevel)
 {
-	public readonly TypeReference ReturnType = returnType;
-	public readonly string[] TypeArgumentNames = typeArgumentNames;
-	public readonly string Name = name;
-	public readonly ArgumentOrLocalSymbol[] Signature = signature;
-	public readonly string SignaturedName = $"{name}({string.Join(", ", signature.Select(s => s.DataType.FullyQualifiedName))})";
-	public string InstantiatedName => TypeArgumentNames.Length > 0 ? $"{SignaturedName}<{string.Join(", ", TypeArgumentNames)}>" : SignaturedName;
+	public readonly string Namespace = namespaceName;
+	public override string FullyQualifiedName => string.IsNullOrEmpty(Namespace) ? Name : $"{Namespace}.{Name}";
+	public override string FullyQualifiedInstantiatedSignaturedName => string.IsNullOrEmpty(Namespace) ? InstantiatedSignaturedName : $"{Namespace}.{InstantiatedSignaturedName}";
 }

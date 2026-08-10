@@ -1,17 +1,20 @@
+using QorLang.Compiler.SymbolChecker.SymbolReferences;
 using QorLang.Compiler.Parser.Nodes;
 
 namespace QorLang.Compiler.SymbolChecker.Symbols;
 
 public class StaticMethodSymbol(
+	string name,
 	TypeReference returnType,
 	string[] typeArgumentNames,
-	string name,
 	ArgumentOrLocalSymbol[] signature,
+	AccessLevel accessLevel,
 	TypeSymbol enclosingType,
 	DataProtection protectionOnSelf
-) : FunctionSymbol(SymbolType.StaticMethod, returnType, typeArgumentNames, name, signature)
+) : FunctionOrMethodSymbol(SymbolType.StaticMethod, name, returnType, typeArgumentNames, signature, accessLevel)
 {
 	public readonly TypeSymbol EnclosingType = enclosingType;
 	public readonly DataProtection ProtectionOnSelf = protectionOnSelf;
-	public string FullyQualifiedName => $"{EnclosingType.FullyQualifiedName}.{InstantiatedName}";
+	public override string FullyQualifiedName => $"{EnclosingType.FullyQualifiedName}.{Name}";
+	public override string FullyQualifiedInstantiatedSignaturedName => $"{EnclosingType.FullyQualifiedName}.{InstantiatedSignaturedName}";
 }

@@ -1,8 +1,9 @@
 using QorLang.Compiler.Parser.Nodes;
+using QorLang.Compiler.SymbolChecker.Symbols;
 
-namespace QorLang.Compiler.SymbolChecker.Symbols;
+namespace QorLang.Compiler.SymbolChecker.SymbolReferences;
 
-public class TypeReference(TypeSymbol typeSymbol, TypeReference[] typeArguments, IndirectionLayer[] indirectionLayers)
+public class TypeReference(TypeSymbol typeSymbol, TypeReference[] typeArguments, IndirectionLayer[] indirectionLayers) : SymbolReference
 {
 	public readonly TypeSymbol TypeSymbol = typeSymbol;
 	public readonly TypeReference[] TypeArguments = typeArguments;
@@ -15,4 +16,7 @@ public class TypeReference(TypeSymbol typeSymbol, TypeReference[] typeArguments,
 	);
 
 	public string FullyQualifiedName => string.IsNullOrEmpty(TypeSymbol.Namespace) ? InstantiatedName : $"{TypeSymbol.Namespace}.{InstantiatedName}";
+
+	public static readonly TypeReference Void = new(TypeSymbol.VoidType, [], []);
+	public static readonly TypeReference ErrorType = new(TypeSymbol.ErrorType, [], []);
 }

@@ -14,6 +14,7 @@ public class DefaultParser(IEnumerable<Token> tokens)
 	int _currentTokenIndex = 0;
 	List<CompilationError> _errors = [];
 	bool _currentDeclIsPublic = false;
+	bool _currentDeclIsStatic = false;
 
 	static CompilationError GenerateError(string message, Token offendingToken)
 	{
@@ -1784,6 +1785,9 @@ public class DefaultParser(IEnumerable<Token> tokens)
 		AccessLevel accessLevel = _currentDeclIsPublic ? AccessLevel.Public : AccessLevel.Private;
 		_currentDeclIsPublic = false;
 
+		bool isStatic = _currentDeclIsStatic;
+		_currentDeclIsStatic = false;
+
 		List<string> typeParameters = [];
 		List<ArgDeclarationNode> parameters = [];
 
@@ -1932,7 +1936,7 @@ public class DefaultParser(IEnumerable<Token> tokens)
 
 		if (isMethod)
 		{
-			return new MethodDefinitionNode(functionName, accessLevel, [..parameters], [..typeParameters], returnType, selfProt, [..body], firstParsedToken.Location);
+			return new MethodDefinitionNode(functionName, accessLevel, [..parameters], [..typeParameters], returnType, selfProt, [..body], isStatic, firstParsedToken.Location);
 		}
 
 		return new FunctionDefinitionNode(functionName, accessLevel, [..parameters], [..typeParameters], returnType, [..body], firstParsedToken.Location);
@@ -1945,7 +1949,10 @@ public class DefaultParser(IEnumerable<Token> tokens)
 	ASTNode ParseFieldDeclaration()
 	{
 		bool fieldIsPublic = _currentDeclIsPublic;
+		bool fieldIsStatic = _currentDeclIsStatic;
+
 		_currentDeclIsPublic = false;
+		_currentDeclIsStatic = false;
 
 		if (!ExpectNextToken(TokenType.Identifier, out var nameToken)) return ErrorOutOfCurrentContext();
 
@@ -2029,7 +2036,7 @@ public class DefaultParser(IEnumerable<Token> tokens)
 			return ErrorOutOfCurrentContext();
 		}
 
-		return new FieldDeclarationNode(nameToken.Value, typeNode, protections, nameToken.Location);
+		return new FieldDeclarationNode(nameToken.Value, typeNode, protections, fieldIsStatic, nameToken.Location);
 	}
 
 	/// <summary>
@@ -2107,6 +2114,13 @@ public class DefaultParser(IEnumerable<Token> tokens)
 					return ErrorOutOfCurrentCodeBlock();
 				}
 
+				if (_currentDeclIsStatic)
+				{
+					_errors.Add(GenerateError($"Error QR202: Expected member declaration after 'static' modifier, but got '}}' instead.", nextToken));
+
+					return ErrorOutOfCurrentCodeBlock();
+				}
+
 				break;
 			}
 			else if (nextToken.Type == TokenType.Keyword)
@@ -2126,7 +2140,25 @@ public class DefaultParser(IEnumerable<Token> tokens)
 						return ErrorOutOfCurrentCodeBlock();
 					}
 
+					if (_currentDeclIsStatic)
+					{
+						_errors.Add(GenerateError($"Error QR222: The 'pub' modifier must precede the 'static' modifier.", nextToken));
+
+						return ErrorOutOfCurrentCodeBlock();
+					}
+
 					_currentDeclIsPublic = true;
+				}
+				else if (nextToken.Value == "static")
+				{
+					if (_currentDeclIsStatic)
+					{
+						_errors.Add(GenerateError($"Error QR221: Duplicate 'static' modifier applied to declaration.", nextToken));
+
+						return ErrorOutOfCurrentCodeBlock();
+					}
+
+					_currentDeclIsStatic = true;
 				}
 				else if (nextToken.Value == "field")
 				{

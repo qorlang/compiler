@@ -12,6 +12,7 @@ public class MethodDefinitionNode(
 	TypeReferenceNode returnType,
 	DataProtection protectionOnSelf,
 	CodeStmt[] body,
+	bool isStatic,
 	TokenLocation location
 ) : TypeMemberDeclarationNode(location)
 {
@@ -22,6 +23,7 @@ public class MethodDefinitionNode(
 	public readonly TypeReferenceNode ReturnType = returnType;
 	public readonly DataProtection ProtectionOnSelf = protectionOnSelf;
 	public readonly CodeStmt[] Body = body;
+	public readonly bool IsStatic = isStatic;
 
 	public override bool Equals(object? obj)
 	{

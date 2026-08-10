@@ -1,25 +1,30 @@
+using QorLang.Compiler.Errors;
+using QorLang.Compiler.Lexer;
 using QorLang.Compiler.SymbolChecker.Symbols;
 
 namespace QorLang.Compiler.SymbolChecker;
 
 public class ScopedSymbolTable(
-	GlobalSymbolTable parent,
+	SymbolTable parent,
+	string currentFileContext,
 	string currentNamespaceContext = "",
 	string currentTypeContext = ""
-)
+) : SymbolTable
 {
-	public readonly GlobalSymbolTable Parent = parent;
-	readonly string CurrentNamespaceContext = currentNamespaceContext;
-	readonly string CurrentTypeContext = currentTypeContext;
+	public readonly SymbolTable Parent = parent;
+	public readonly string CurrentNamespaceContext = currentNamespaceContext;
+	public readonly string CurrentTypeContext = currentTypeContext;
+	public readonly string CurrentFileContext = currentFileContext;
 	readonly Dictionary<string, Symbol> _symbols = [];
 
-	public void AddSymbol(Symbol symbol)
+	public override List<CompilationError> AddSymbol(Symbol symbol, TokenLocation declarationLocation)
 	{
-
+		return [];
 	}
 
-	public bool TryGetSymbol(string name, out Symbol? symbol)
+	public bool TryGetSymbol(string name, out Symbol symbol)
 	{
-		return Parent.TryGetSymbol(name, CurrentNamespaceContext, CurrentTypeContext, out symbol);
+		symbol = null!;
+		return true;
 	}
 }

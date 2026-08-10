@@ -7,12 +7,14 @@ public class FieldDeclarationNode(
 	string name,
 	TypeReferenceNode dataType,
 	Dictionary<AccessLevel, DataProtection[]> protections,
+	bool isStatic,
 	TokenLocation location
 ) : TypeMemberDeclarationNode(location)
 {
 	public readonly string Name = name;
 	public readonly TypeReferenceNode DataType = dataType;
 	public readonly Dictionary<AccessLevel, DataProtection[]> Protections = protections;
+	public readonly bool IsStatic = isStatic;
 
 	public override bool Equals(object? obj)
 	{
