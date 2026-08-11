@@ -36,7 +36,7 @@ public class DefaultSymbolChecker(IEnumerable<ASTNode> nodes)
 	{
 		TypeSymbol typeBase;
 
-		if (!_symbols.TryGetSymbol(node.TypeName, node.Location.File, out var returnTypeSymbol))
+		if (!_symbols.TryGetSymbol(node.TypeName, node.Location.File, out var returnTypeSymbolMatches))
 		{
 			_errors.Add(new CompilationError(
 				$"Error QR302: Type '{node.TypeName}' is not defined.",
@@ -45,7 +45,7 @@ public class DefaultSymbolChecker(IEnumerable<ASTNode> nodes)
 
 			typeBase = TypeSymbol.ErrorType;
 		}
-		else if (returnTypeSymbol.Type != SymbolType.Type)
+		else if (returnTypeSymbolMatches[0].Type != SymbolType.Type)
 		{
 			_errors.Add(new CompilationError(
 				$"Error QR303: '{node.TypeName}' is not a type.",
@@ -54,7 +54,7 @@ public class DefaultSymbolChecker(IEnumerable<ASTNode> nodes)
 
 			typeBase = TypeSymbol.ErrorType;
 		}
-		else if (returnTypeSymbol == TypeSymbol.VoidType && !allowVoid)
+		else if (returnTypeSymbolMatches[0] == TypeSymbol.VoidType && !allowVoid)
 		{
 			_errors.Add(new CompilationError(
 				$"Error QR304: void cannot be used in this context. Please supply a concrete type.",
@@ -65,7 +65,7 @@ public class DefaultSymbolChecker(IEnumerable<ASTNode> nodes)
 		}
 		else
 		{
-			typeBase = (TypeSymbol) returnTypeSymbol;
+			typeBase = (TypeSymbol) returnTypeSymbolMatches[0];
 		}
 
 		TypeReference[] typeArguments = [.. node.TypeArguments.Select(argNode => ResolveTypeReference(argNode))];
@@ -475,40 +475,31 @@ public class DefaultSymbolChecker(IEnumerable<ASTNode> nodes)
 	{
 		var targetMethodName = $"{definedOn.FullyQualifiedName}.@{operatorSpecialName}";
 
-		if (!_symbols.TryGetSymbol(targetMethodName, location.File, out var targetMethodSymbol))
-		{
-			_errors.Add(new CompilationError(
-				$"Error QR305: Type '{definedOn.FullyQualifiedName}' does not have an @add method defined.",
-				location
-			));
-		}
-		else if (targetMethodSymbol.Type != SymbolType.BoundMethod)
-		{
-			_errors.Add(new CompilationError(
-				$"Error QR306: Symbol '{targetMethodName}' is not a bound method.",
-				location
-			));
-		}
-		else
-		{
-			var targetFunction = (FunctionOrMethodSymbol) targetMethodSymbol;
+		_symbols.TryGetSymbol(targetMethodName, location.File, out var symbolMatches);
+		BoundMethodSymbol[] targetMethodMatches  = [..symbolMatches.OfType<BoundMethodSymbol>()];
 
-			if (targetFunction.Signature.Length != argcount)
+		if (symbolMatches.Length == 0)
+		{
+			_errors.Add(new CompilationError(
+				$"Error QR305: Type '{definedOn.FullyQualifiedName}' does not have an instance @add method defined.",
+				location
+			));
+		}
+		else if (targetMethodMatches.All(targetFunction => targetFunction.Signature.Length != argcount))
+		{
+			if (argcount == 1)
 			{
-				if (argcount == 1)
-				{
-					_errors.Add(new CompilationError(
-						$"Error QR307: Symbol '{targetMethodName}' must have exactly one argument.",
-						location
-					));
-				}
-				else
-				{
-					_errors.Add(new CompilationError(
-						$"Error QR307: Symbol '{targetMethodName}' must have exactly {argcount} arguments.",
-						location
-					));
-				}
+				_errors.Add(new CompilationError(
+					$"Error QR307: Symbol '{targetMethodName}' must have exactly one argument.",
+					location
+				));
+			}
+			else
+			{
+				_errors.Add(new CompilationError(
+					$"Error QR307: Symbol '{targetMethodName}' must have exactly {argcount} arguments.",
+					location
+				));
 			}
 		}
 	}
@@ -517,8 +508,8 @@ public class DefaultSymbolChecker(IEnumerable<ASTNode> nodes)
 	{
 		if (
 			!_symbols.TryGetSymbol(literalType, expr.Location.File, out var stringTypeSymbol) ||
-			stringTypeSymbol.Type != SymbolType.Type ||
-			((TypeSymbol) stringTypeSymbol).TypeArgumentNames.Length != 0)
+			stringTypeSymbol[0].Type != SymbolType.Type ||
+			((TypeSymbol) stringTypeSymbol[0]).TypeArgumentNames.Length != 0)
 		{
 			_errors.Add(new CompilationError(
 				$"Error QR310: Literal type '{literalType}' cannot be found.",
@@ -529,7 +520,7 @@ public class DefaultSymbolChecker(IEnumerable<ASTNode> nodes)
 		}
 		else
 		{
-			var stringTypeRef = new TypeReference((TypeSymbol) stringTypeSymbol, [], []);
+			var stringTypeRef = new TypeReference((TypeSymbol) stringTypeSymbol[0], [], []);
 
 			_exprTypeMap[expr] = stringTypeRef;
 		}
@@ -573,7 +564,7 @@ public class DefaultSymbolChecker(IEnumerable<ASTNode> nodes)
 				}
 				else
 				{
-					var thisTypeRef = ((BoundFieldSymbol) thisSymbol).DataType;
+					var thisTypeRef = ((BoundFieldSymbol) thisSymbol[0]).DataType;
 
 					_exprTypeMap[expr] = thisTypeRef;
 				}
@@ -584,11 +575,46 @@ public class DefaultSymbolChecker(IEnumerable<ASTNode> nodes)
 				VisitAndTagExpr(symTable, binOpExpr.Right);
 
 				break;
+
+			// dot, ref, deref, and call may not be overloaded
 			case CallExpr callExpr:
+				// validate method exists, etc.
+				break;
+			case RefExpr refExpr:
+				VisitAndTagExpr(symTable, refExpr.Target);
 				break;
 			case DerefExpr derefExpr:
+				VisitAndTagExpr(symTable, derefExpr.Target);
+
+				// ensure target is a pointer type
+
+				if (_exprTypeMap[derefExpr.Target].IndirectionLayers[^1] != IndirectionLayer.PointerTo)
+				{
+					_errors.Add(new CompilationError(
+						$"Error QR309: Cannot dereference a non-pointer type.",
+						derefExpr.Location
+					));
+
+					_exprTypeMap[derefExpr] = TypeReference.ErrorType;
+				}
+				else
+				{
+					var targetType = _exprTypeMap[derefExpr.Target];
+
+					var derefType = new TypeReference(
+						targetType.TypeSymbol,
+						targetType.TypeArguments,
+						targetType.IndirectionLayers[..^1]
+					);
+
+					_exprTypeMap[derefExpr] = derefType;
+				}
+
 				break;
 			case DotExpr dotExpr:
+				VisitAndTagExpr(symTable, dotExpr.Target);
+
+				// ensure property exists and is accessible
 				break;
 			case IndexExpr indexExpr:
 				break;
@@ -601,8 +627,6 @@ public class DefaultSymbolChecker(IEnumerable<ASTNode> nodes)
 			case PreDecrementExpr preDecrementExpr:
 				break;
 			case PreIncrementExpr preIncrementExpr:
-				break;
-			case RefExpr refExpr:
 				break;
 			case UnaryMinusExpr unaryMinusExpr:
 				break;

@@ -96,19 +96,19 @@ public class GlobalSymbolTable : SymbolTable
 		return errors;
 	}
 
-	public bool TryGetSymbol(string name, string currentFile, out Symbol symbol)
+	public bool TryGetSymbol(string name, string currentFile, out Symbol[] matches)
 	{
-		return TryGetSymbol(name, currentFile, string.Empty, out symbol);
+		return TryGetSymbol(name, currentFile, string.Empty, out matches);
 	}
 
-	public bool TryGetSymbol(string name, string currentFile, string currentNamespaceContext, out Symbol symbol)
+	public bool TryGetSymbol(string name, string currentFile, string currentNamespaceContext, out Symbol[] matches)
 	{
-		return TryGetSymbol(name, currentFile, currentNamespaceContext, string.Empty, out symbol);
+		return TryGetSymbol(name, currentFile, currentNamespaceContext, string.Empty, out matches);
 	}
 
-	public bool TryGetSymbol(string name, string currentFile, string currentNamespaceContext, string currentTypeContext, out Symbol symbol)
+	public bool TryGetSymbol(string name, string currentFile, string currentNamespaceContext, string currentTypeContext, out Symbol[] matches)
 	{
-		symbol = null!;
+		matches = [];
 		return false;
 	}
 }

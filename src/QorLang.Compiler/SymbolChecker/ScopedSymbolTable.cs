@@ -22,9 +22,10 @@ public class ScopedSymbolTable(
 		return [];
 	}
 
-	public bool TryGetSymbol(string name, out Symbol symbol)
+	public bool TryGetSymbol(string name, out Symbol[] matches)
 	{
-		symbol = null!;
+		matches = [];
+
 		return true;
 	}
 }
