@@ -1,34 +1,21 @@
 using QorLang.Compiler.Errors;
 using QorLang.Compiler.Lexer;
+using QorLang.Compiler.SymbolChecker.SymbolReferences;
 using QorLang.Compiler.SymbolChecker.Symbols;
 
 namespace QorLang.Compiler.SymbolChecker;
 
+// TODO: need to somehow support method/function types
 public class GlobalSymbolTable : SymbolTable
 {
 	readonly List<GlobalSymbolTable> importedModules = [];
-	readonly Dictionary<string, Symbol> _symbols = [];
+	// there needs to be a better way to organize this to lookup by type context, namespace context, etc.
+	// readonly Dictionary<string, Symbol> _symbols = [];
 	readonly Dictionary<string, List<string>> _usedNamespaces = [];
 
 	public List<CompilationError> AddImport(GlobalSymbolTable module, TokenLocation importLocation)
 	{
 		List<CompilationError> errors = [];
-
-		// check for name conflicts
-		foreach (var fqSymbolName in module._symbols.Keys)
-		{
-			if (_symbols.ContainsKey(fqSymbolName))
-			{
-				errors.Add(
-					new CompilationError(
-						$"Error QR301: Module import conflict: Symbol '{fqSymbolName}' already exists in the current global scope.",
-						importLocation
-					)
-				);
-			}
-		}
-
-		importedModules.Add(module);
 
 		return errors;
 	}
@@ -49,22 +36,7 @@ public class GlobalSymbolTable : SymbolTable
 			_ => throw new InvalidOperationException($"Cannot add symbol of type {symbol.GetType().Name} to GlobalSymbolTable")
 		};
 
-		// check for name conflicts
-		if (_symbols.ContainsKey(fullyQualifiedName))
-		{
-			errors.Add(
-				new CompilationError(
-					$"Error QR301: Symbol '{fullyQualifiedName}' is defined twice in the global scope.",
-					declarationLocation
-				)
-			);
-		}
-		else
-		{
-			_symbols[fullyQualifiedName] = symbol;
-		}
-
-		return errors;
+		return [];
 	}
 
 	// implements the 'using' directive
@@ -103,10 +75,22 @@ public class GlobalSymbolTable : SymbolTable
 
 	public bool TryGetSymbol(string name, string currentFile, string currentNamespaceContext, out Symbol[] matches)
 	{
-		return TryGetSymbol(name, currentFile, currentNamespaceContext, string.Empty, out matches);
+		matches = [];
+		return false;
 	}
 
-	public bool TryGetSymbol(string name, string currentFile, string currentNamespaceContext, string currentTypeContext, out Symbol[] matches)
+	public bool TryGetSymbol(string name, string currentFile, TypeSymbol? currentTypeContext, out Symbol[] matches)
+	{
+		matches = [];
+		return false;
+	}
+
+	public bool TryGetMember(
+		TypeReference fromType,
+		string name,
+		bool instance,
+		out Symbol[] matches
+	)
 	{
 		matches = [];
 		return false;

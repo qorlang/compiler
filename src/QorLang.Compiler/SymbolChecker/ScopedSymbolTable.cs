@@ -6,15 +6,15 @@ namespace QorLang.Compiler.SymbolChecker;
 
 public class ScopedSymbolTable(
 	SymbolTable parent,
-	string currentFileContext,
-	string currentNamespaceContext = "",
-	string currentTypeContext = ""
+	string fileContext,
+	string namespaceContext = "",
+	TypeSymbol? typeContext = null
 ) : SymbolTable
 {
 	public readonly SymbolTable Parent = parent;
-	public readonly string CurrentNamespaceContext = currentNamespaceContext;
-	public readonly string CurrentTypeContext = currentTypeContext;
-	public readonly string CurrentFileContext = currentFileContext;
+	public readonly string NamespaceContext = namespaceContext;
+	public readonly TypeSymbol? TypeContext = typeContext;
+	public readonly string FileContext = fileContext;
 	readonly Dictionary<string, Symbol> _symbols = [];
 
 	public override List<CompilationError> AddSymbol(Symbol symbol, TokenLocation declarationLocation)

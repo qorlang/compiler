@@ -402,7 +402,7 @@ public class DefaultSymbolChecker(IEnumerable<ASTNode> nodes)
 
 				break;
 			case ForStmt stmt:
-				var forScope = new ScopedSymbolTable(symTable, symTable.CurrentFileContext, symTable.CurrentNamespaceContext, symTable.CurrentTypeContext);
+				var forScope = new ScopedSymbolTable(symTable, symTable.FileContext, symTable.NamespaceContext, symTable.TypeContext);
 
 				if (stmt.Initializer is not null)
 				{
@@ -426,7 +426,7 @@ public class DefaultSymbolChecker(IEnumerable<ASTNode> nodes)
 
 				break;
 			case WhileStmt stmt:
-				var whileScope = new ScopedSymbolTable(symTable, symTable.CurrentFileContext, symTable.CurrentNamespaceContext, symTable.CurrentTypeContext);
+				var whileScope = new ScopedSymbolTable(symTable, symTable.FileContext, symTable.NamespaceContext, symTable.TypeContext);
 
 				VisitAndTagExpr(symTable, stmt.Condition);
 
@@ -437,7 +437,7 @@ public class DefaultSymbolChecker(IEnumerable<ASTNode> nodes)
 
 				break;
 			case IfStmt stmt:
-				var ifScope = new ScopedSymbolTable(symTable, symTable.CurrentFileContext, symTable.CurrentNamespaceContext, symTable.CurrentTypeContext);
+				var ifScope = new ScopedSymbolTable(symTable, symTable.FileContext, symTable.NamespaceContext, symTable.TypeContext);
 
 				VisitAndTagExpr(symTable, stmt.Condition);
 
@@ -446,7 +446,7 @@ public class DefaultSymbolChecker(IEnumerable<ASTNode> nodes)
 					VisitAndTagStmt(ifScope, bodyStmt);
 				}
 
-				var elseScope = new ScopedSymbolTable(symTable, symTable.CurrentFileContext, symTable.CurrentNamespaceContext, symTable.CurrentTypeContext);
+				var elseScope = new ScopedSymbolTable(symTable, symTable.FileContext, symTable.NamespaceContext, symTable.TypeContext);
 
 				foreach (var bodyStmt in stmt.ElseBody)
 				{
@@ -614,7 +614,63 @@ public class DefaultSymbolChecker(IEnumerable<ASTNode> nodes)
 			case DotExpr dotExpr:
 				VisitAndTagExpr(symTable, dotExpr.Target);
 
-				// ensure property exists and is accessible
+				NamespaceReference? targetNamespaceRef = null;
+				TypeReference? targetTypeRef = null;
+				bool isNamespaceProperty = false;
+				bool isInstanceProperty = false;
+
+				if (_exprTypeMap.ContainsKey(dotExpr.Target))
+				{
+					// instance attribute, as the Target is a valued expression and not a type reference
+
+					targetTypeRef = _exprTypeMap[dotExpr.Target];
+					isInstanceProperty = true;
+				}
+				else
+				{
+					if (_resolvedNodeToReferenceMap[dotExpr.Target] is NamespaceReference)
+					{
+						targetNamespaceRef = (NamespaceReference) _resolvedNodeToReferenceMap[dotExpr.Target];
+						isNamespaceProperty = true;
+					}
+					else
+					{
+						targetTypeRef = (TypeReference) _resolvedNodeToReferenceMap[dotExpr.Target];
+						isInstanceProperty = false;
+					}
+				}
+
+				if (isNamespaceProperty)
+				{
+
+				}
+				else
+				{
+					if (!_symbols.TryGetMember(
+						targetTypeRef!,
+						dotExpr.Property.Name,
+						isInstanceProperty,
+						out var propertySymbolMatches
+					))
+					{
+						_errors.Add(new CompilationError(
+							$"Error QR306: Type '{targetTypeRef!.FullyQualifiedName}' does not have a property named '{dotExpr.Property.Name}'.",
+							dotExpr.Location
+						));
+
+						_exprTypeMap[dotExpr] = TypeReference.ErrorType;
+					}
+					else
+					{
+						// need to handle case of ambiguous method reference
+						// so if the lookup is ambiguous and this expression is
+						// not the target of a call expression, then we should error out
+
+						// then check for matches based on # of type parameters
+						// and then check if it is properly static/instance
+					}
+				}
+
 				break;
 			case IndexExpr indexExpr:
 				break;
