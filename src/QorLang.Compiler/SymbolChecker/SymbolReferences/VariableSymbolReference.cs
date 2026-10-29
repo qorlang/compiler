@@ -15,4 +15,13 @@ public class VariableSymbolReference : SymbolReference
 
 		Symbol = symbol;
 	}
+
+	public TypeReference DataType => Symbol switch
+	{
+		BoundFieldSymbol boundFieldSymbol => boundFieldSymbol.DataType,
+		StaticFieldSymbol staticFieldSymbol => staticFieldSymbol.DataType,
+		ArgumentOrLocalSymbol argumentOrLocalSymbol => argumentOrLocalSymbol.DataType,
+		GlobalSymbol globalSymbol => globalSymbol.DataType,
+		_ => throw new InvalidOperationException($"Unexpected symbol type: {Symbol.GetType().Name}")
+	};
 }

@@ -21,6 +21,24 @@ public class DefaultParser(IEnumerable<Token> tokens)
 		return new CompilationError(message, offendingToken.Location);
 	}
 
+	static CodeStmt FormAssignStmt(TokenType assignmentType, Expr leftExpr, Expr rightExpr, TokenLocation location)
+	{
+		return assignmentType switch
+		{
+			TokenType.Assign => leftExpr switch {
+				IndexExpr indexExpr => new IndexAssignStmt(indexExpr, rightExpr, location),
+				NameReferenceExpr or DotExpr => new AssignStmt(leftExpr, rightExpr, location),
+				_ => throw new Exception("Unreachable code: Unrecognized left expression type for assignment.")
+			},
+			TokenType.AddAssign => FormAssignStmt(assignmentType, leftExpr, new AddExpr(leftExpr, rightExpr, location), location),
+			TokenType.SubAssign => FormAssignStmt(assignmentType, leftExpr, new SubExpr(leftExpr, rightExpr, location), location),
+			TokenType.MulAssign => FormAssignStmt(assignmentType, leftExpr, new MulExpr(leftExpr, rightExpr, location), location),
+			TokenType.DivAssign => FormAssignStmt(assignmentType, leftExpr, new DivExpr(leftExpr, rightExpr, location), location),
+			TokenType.ModAssign => FormAssignStmt(assignmentType, leftExpr, new ModExpr(leftExpr, rightExpr, location), location),
+			_ => throw new Exception("Unreachable code: Unrecognized assignment type.")
+		};
+	}
+
 	Token GetNextToken()
 	{
 		if (_currentTokenIndex < _tokens.Length)
@@ -1464,16 +1482,7 @@ public class DefaultParser(IEnumerable<Token> tokens)
 				return ErrorOutOfCurrentCodeStmt();
 			}
 
-			initializer = assignmentType switch
-			{
-				TokenType.Assign => new AssignStmt(leftExpr, rightExpr, nextToken.Location),
-				TokenType.AddAssign => new AddAssignStmt(leftExpr, rightExpr, nextToken.Location),
-				TokenType.SubAssign => new SubAssignStmt(leftExpr, rightExpr, nextToken.Location),
-				TokenType.MulAssign => new MulAssignStmt(leftExpr, rightExpr, nextToken.Location),
-				TokenType.DivAssign => new DivAssignStmt(leftExpr, rightExpr, nextToken.Location),
-				TokenType.ModAssign => new ModAssignStmt(leftExpr, rightExpr, nextToken.Location),
-				_ => throw new Exception("Unreachable code: Unrecognized assignment operator in for loop initializer.")
-			};
+			initializer = FormAssignStmt(assignmentType, leftExpr, rightExpr, nextToken.Location);
 		}
 
 		Expr? condition = null;
@@ -1556,16 +1565,7 @@ public class DefaultParser(IEnumerable<Token> tokens)
 					return ErrorOutOfCurrentCodeStmt();
 				}
 
-				increment = assignmentType switch
-				{
-					TokenType.Assign => new AssignStmt(incrementExpr, rightExpr, nextToken.Location),
-					TokenType.AddAssign => new AddAssignStmt(incrementExpr, rightExpr, nextToken.Location),
-					TokenType.SubAssign => new SubAssignStmt(incrementExpr, rightExpr, nextToken.Location),
-					TokenType.MulAssign => new MulAssignStmt(incrementExpr, rightExpr, nextToken.Location),
-					TokenType.DivAssign => new DivAssignStmt(incrementExpr, rightExpr, nextToken.Location),
-					TokenType.ModAssign => new ModAssignStmt(incrementExpr, rightExpr, nextToken.Location),
-					_ => throw new Exception("Unreachable code: Unrecognized assignment operator in for loop increment.")
-				};
+				increment = FormAssignStmt(assignmentType, incrementExpr, rightExpr, nextToken.Location);
 			}
 			else
 			{
@@ -1720,16 +1720,7 @@ public class DefaultParser(IEnumerable<Token> tokens)
 					if (rhs is not ErrorExpr)
 					{
 						statements.Add(
-							assignmentType switch
-							{
-								TokenType.Assign => new AssignStmt(expr, rhs, nextToken.Location),
-								TokenType.AddAssign => new AddAssignStmt(expr, rhs, nextToken.Location),
-								TokenType.SubAssign => new SubAssignStmt(expr, rhs, nextToken.Location),
-								TokenType.MulAssign => new MulAssignStmt(expr, rhs, nextToken.Location),
-								TokenType.DivAssign => new DivAssignStmt(expr, rhs, nextToken.Location),
-								TokenType.ModAssign => new ModAssignStmt(expr, rhs, nextToken.Location),
-								_ => throw new Exception($"Unexpected assignment operator {assignmentType}")
-							}
+							FormAssignStmt(assignmentType, expr, rhs, nextToken.Location)
 						);
 						if (postExprToken.Type != TokenType.Semicolon)
 						{

@@ -374,24 +374,9 @@ public class DefaultSymbolChecker(IEnumerable<ASTNode> nodes)
 				VisitAndTagExpr(symTable, stmt.Value);
 
 				break;
-			case AddAssignStmt stmt:
-				VisitOpAssignment(symTable, stmt.Target, stmt.Value, "add", stmt.Location);
-
-				break;
-			case SubAssignStmt stmt:
-				VisitOpAssignment(symTable, stmt.Target, stmt.Value, "sub", stmt.Location);
-
-				break;
-			case MulAssignStmt stmt:
-				VisitOpAssignment(symTable, stmt.Target, stmt.Value, "mul", stmt.Location);
-
-				break;
-			case DivAssignStmt stmt:
-				VisitOpAssignment(symTable, stmt.Target, stmt.Value, "div", stmt.Location);
-
-				break;
-			case ModAssignStmt stmt:
-				VisitOpAssignment(symTable, stmt.Target, stmt.Value, "mod", stmt.Location);
+			case IndexAssignStmt stmt:
+				// need to validate that @seti exist and the signature matches, grab the @seti declaration, and then use the return value to set
+				// just realized that there could theoretically be an IndexAddAssignStmt... so a better solution needs to
 
 				break;
 			case ReturnStmt stmt:
@@ -574,6 +559,8 @@ public class DefaultSymbolChecker(IEnumerable<ASTNode> nodes)
 				VisitAndTagExpr(symTable, binOpExpr.Left);
 				VisitAndTagExpr(symTable, binOpExpr.Right);
 
+				// TODO: needs method lookup
+
 				break;
 
 			// dot, ref, deref, and call may not be overloaded
@@ -642,7 +629,38 @@ public class DefaultSymbolChecker(IEnumerable<ASTNode> nodes)
 
 				if (isNamespaceProperty)
 				{
+					if (!_symbols.TryGetNamespaceMember(
+						targetNamespaceRef!,
+						dotExpr.Property.Name,
+						out var namespaceMemberMatches
+					))
+					{
+						_errors.Add(new CompilationError(
+							$"Error QR311: Namespace '{targetNamespaceRef!.FullyQualifiedName}' does not have a member named '{dotExpr.Property.Name}'.",
+							dotExpr.Location
+						));
 
+						_exprTypeMap[dotExpr] = TypeReference.ErrorType;
+					}
+					else
+					{
+						if (namespaceMemberMatches.Length > 1)
+						{
+							// Now need to check if this is the target of a call expr.
+							// need to handle case of ambiguous method reference
+							// so if the lookup is ambiguous and this expression is
+							// not the target of a call expression, then we should error out
+
+							// then check for matches based on # of type parameters
+							// and then check if it is properly static/instance
+						}
+						else
+						{
+							var varRef = new VariableSymbolReference(namespaceMemberMatches[0]);
+							_resolvedNodeToReferenceMap[dotExpr] = varRef;
+							_exprTypeMap[dotExpr] = varRef.DataType;
+						}
+					}
 				}
 				else
 				{
@@ -662,6 +680,46 @@ public class DefaultSymbolChecker(IEnumerable<ASTNode> nodes)
 					}
 					else
 					{
+						if (propertySymbolMatches.Length > 1)
+						{
+							// Now need to check if this is the target of a call expr.
+							// need to handle case of ambiguous method reference
+							// so if the lookup is ambiguous and this expression is
+							// not the target of a call expression, then we should error out
+
+							// then check for matches based on # of type parameters
+							// and then check if it is properly static/instance
+						}
+						else
+						{
+							var varRef = new VariableSymbolReference(propertySymbolMatches[0]);
+							_resolvedNodeToReferenceMap[dotExpr] = varRef;
+							_exprTypeMap[dotExpr] = varRef.DataType;
+						}
+					}
+				}
+
+				break;
+			case IndexExpr indexExpr: // requires method lookup and containing expr for @geti
+				break;
+			case NameReferenceExpr nameReferenceExpr:
+				if (!symTable.TryGetSymbol(
+					nameReferenceExpr.Name,
+					out var symbolMatches
+				))
+				{
+					_errors.Add(new CompilationError(
+						$"Error QR314: Symbol '{nameReferenceExpr.Name}' not found.",
+						nameReferenceExpr.Location
+					));
+
+					_exprTypeMap[nameReferenceExpr] = TypeReference.ErrorType;
+				}
+				else
+				{
+					if (symbolMatches.Length > 1)
+					{
+						// Now need to check if this is the target of a call expr.
 						// need to handle case of ambiguous method reference
 						// so if the lookup is ambiguous and this expression is
 						// not the target of a call expression, then we should error out
@@ -669,26 +727,19 @@ public class DefaultSymbolChecker(IEnumerable<ASTNode> nodes)
 						// then check for matches based on # of type parameters
 						// and then check if it is properly static/instance
 					}
+					else
+					{
+						var varRef = new VariableSymbolReference(symbolMatches[0]);
+						_resolvedNodeToReferenceMap[nameReferenceExpr] = varRef;
+						_exprTypeMap[nameReferenceExpr] = varRef.DataType;
+					}
 				}
+				break;
+			case UnaryOpExpr unaryOpExpr:
+				VisitAndTagExpr(symTable, unaryOpExpr.Target);
 
+				// requires method lookup
 				break;
-			case IndexExpr indexExpr:
-				break;
-			case NameReferenceExpr nameReferenceExpr:
-				break;
-			case PostDecrementExpr postDecrementExpr:
-				break;
-			case PostIncrementExpr postIncrementExpr:
-				break;
-			case PreDecrementExpr preDecrementExpr:
-				break;
-			case PreIncrementExpr preIncrementExpr:
-				break;
-			case UnaryMinusExpr unaryMinusExpr:
-				break;
-			case UnaryPlusExpr unaryPlusExpr:
-				break;
-
 			default:
 				throw new NotImplementedException($"SymbolChecker.VisitAndTagExpr: Unhandled expression type {expr.GetType().Name}");
 		}

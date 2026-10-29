@@ -11,7 +11,7 @@ public class AssignStmt(
 ) : CodeStmt(location)
 {
 	/// <summary>
-	/// Must be a <see cref="DotExpr"/>, non-generic <see cref="NameReferenceExpr"/>, or <see cref="IndexExpr"/>
+	/// Must be a <see cref="DotExpr"/> or non-generic <see cref="NameReferenceExpr"/>
 	/// </summary>
 	public readonly Expr Target = target;
 	public readonly Expr Value = value;

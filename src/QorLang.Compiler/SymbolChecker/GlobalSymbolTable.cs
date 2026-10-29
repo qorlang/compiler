@@ -85,6 +85,16 @@ public class GlobalSymbolTable : SymbolTable
 		return false;
 	}
 
+	public bool TryGetNamespaceMember(
+		NamespaceReference fromNamespace,
+		string name,
+		out Symbol[] matches
+	)
+	{
+		matches = [];
+		return false;
+	}
+
 	public bool TryGetMember(
 		TypeReference fromType,
 		string name,
