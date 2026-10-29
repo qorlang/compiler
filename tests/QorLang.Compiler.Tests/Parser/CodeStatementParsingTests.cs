@@ -220,7 +220,7 @@ public class CodeStatementParsingTests
 	}
 
 	[Fact]
-	public void Parse_IndexAssignment_ReturnsAssignmentStmt()
+	public void Parse_IndexAssignment_ReturnsIndexAssignmentStmt()
 	{
 		var code = """
 		main()
@@ -233,11 +233,181 @@ public class CodeStatementParsingTests
 
 		Assert.Empty(errors);
 		var funcNode = Assert.IsType<FunctionDefinitionNode>(nodes.First());
-		var stmt = Assert.IsType<AssignStmt>(funcNode.Body.First());
+		var stmt = Assert.IsType<IndexAssignStmt>(funcNode.Body.First());
 		var target = Assert.IsType<IndexExpr>(stmt.Target);
 		var indexValue = Assert.IsType<IntegerLiteralExpr>(target.Index);
 		Assert.Equal("0", indexValue.Value);
 	}
+
+	[Fact]
+	public void Parse_ChainedIndexAssignment_ReturnsIndexAssignmentStmt()
+	{
+		var code = """
+		main()
+		{
+			arr[0][1] = 50;
+		}
+		""";
+
+		var (nodes, errors) = TestHelper.ParseCode(code);
+
+		Assert.Empty(errors);
+		var funcNode = Assert.IsType<FunctionDefinitionNode>(nodes.First());
+		var stmt = Assert.IsType<IndexAssignStmt>(funcNode.Body.First());
+		var target = Assert.IsType<IndexExpr>(stmt.Target);
+		var indexValue = Assert.IsType<IntegerLiteralExpr>(target.Index);
+		Assert.Equal("1", indexValue.Value);
+		var baseIndex = Assert.IsType<IndexExpr>(target.Target);
+		var baseIndexValue = Assert.IsType<IntegerLiteralExpr>(baseIndex.Index);
+		Assert.Equal("0", baseIndexValue.Value);
+	}
+
+	[Fact]
+	public void Parse_AddAssign_ReturnsAssignStmt()
+	{
+		var code = """
+		main()
+		{
+			x += 10;
+		}
+		""";
+
+		var (nodes, errors) = TestHelper.ParseCode(code);
+
+		Assert.Empty(errors);
+		var funcNode = Assert.IsType<FunctionDefinitionNode>(nodes.First());
+		var stmt = Assert.IsType<AssignStmt>(funcNode.Body.First());
+		var target = Assert.IsType<NameReferenceExpr>(stmt.Target);
+		Assert.Equal("x", target.Name);
+		var value = Assert.IsType<AddExpr>(stmt.Value);
+		var left = Assert.IsType<NameReferenceExpr>(value.Left);
+		Assert.Equal("x", left.Name);
+		var right = Assert.IsType<IntegerLiteralExpr>(value.Right);
+		Assert.Equal("10", right.Value);
+	}
+
+	[Fact]
+	public void Parse_SubAssign_ReturnsAssignStmt()
+	{
+		var code = """
+		main()
+		{
+			x -= 5;
+		}
+		""";
+
+		var (nodes, errors) = TestHelper.ParseCode(code);
+
+		Assert.Empty(errors);
+		var funcNode = Assert.IsType<FunctionDefinitionNode>(nodes.First());
+		var stmt = Assert.IsType<AssignStmt>(funcNode.Body.First());
+		var target = Assert.IsType<NameReferenceExpr>(stmt.Target);
+		Assert.Equal("x", target.Name);
+		var value = Assert.IsType<SubExpr>(stmt.Value);
+		var left = Assert.IsType<NameReferenceExpr>(value.Left);
+		Assert.Equal("x", left.Name);
+		var right = Assert.IsType<IntegerLiteralExpr>(value.Right);
+		Assert.Equal("5", right.Value);
+	}
+
+	[Fact]
+	public void Parse_MulAssign_ReturnsAssignStmt()
+	{
+		var code = """
+		main()
+		{
+			x *= 3;
+		}
+		""";
+
+		var (nodes, errors) = TestHelper.ParseCode(code);
+
+		Assert.Empty(errors);
+		var funcNode = Assert.IsType<FunctionDefinitionNode>(nodes.First());
+		var stmt = Assert.IsType<AssignStmt>(funcNode.Body.First());
+		var target = Assert.IsType<NameReferenceExpr>(stmt.Target);
+		Assert.Equal("x", target.Name);
+		var value = Assert.IsType<MulExpr>(stmt.Value);
+		var left = Assert.IsType<NameReferenceExpr>(value.Left);
+		Assert.Equal("x", left.Name);
+		var right = Assert.IsType<IntegerLiteralExpr>(value.Right);
+		Assert.Equal("3", right.Value);
+	}
+
+	[Fact]
+	public void Parse_DivAssign_ReturnsAssignStmt()
+	{
+		var code = """
+		main()
+		{
+			x /= 2;
+		}
+		""";
+
+		var (nodes, errors) = TestHelper.ParseCode(code);
+
+		Assert.Empty(errors);
+		var funcNode = Assert.IsType<FunctionDefinitionNode>(nodes.First());
+		var stmt = Assert.IsType<AssignStmt>(funcNode.Body.First());
+		var target = Assert.IsType<NameReferenceExpr>(stmt.Target);
+		Assert.Equal("x", target.Name);
+		var value = Assert.IsType<DivExpr>(stmt.Value);
+		var left = Assert.IsType<NameReferenceExpr>(value.Left);
+		Assert.Equal("x", left.Name);
+		var right = Assert.IsType<IntegerLiteralExpr>(value.Right);
+		Assert.Equal("2", right.Value);
+	}
+
+	[Fact]
+	public void Parse_ModAssign_ReturnsAssignStmt()
+	{
+		var code = """
+		main()
+		{
+			x %= 4;
+		}
+		""";
+
+		var (nodes, errors) = TestHelper.ParseCode(code);
+
+		Assert.Empty(errors);
+		var funcNode = Assert.IsType<FunctionDefinitionNode>(nodes.First());
+		var stmt = Assert.IsType<AssignStmt>(funcNode.Body.First());
+		var target = Assert.IsType<NameReferenceExpr>(stmt.Target);
+		Assert.Equal("x", target.Name);
+		var value = Assert.IsType<ModExpr>(stmt.Value);
+		var left = Assert.IsType<NameReferenceExpr>(value.Left);
+		Assert.Equal("x", left.Name);
+		var right = Assert.IsType<IntegerLiteralExpr>(value.Right);
+		Assert.Equal("4", right.Value);
+	}
+
+	[Fact]
+	public void Parse_AddIndexAssignment_ReturnsIndexAssignStmt()
+	{
+		var code = """
+		main()
+		{
+			arr[0] += 10;
+		}
+		""";
+
+		var (nodes, errors) = TestHelper.ParseCode(code);
+
+		Assert.Empty(errors);
+		var funcNode = Assert.IsType<FunctionDefinitionNode>(nodes.First());
+		var stmt = Assert.IsType<IndexAssignStmt>(funcNode.Body.First());
+		var target = Assert.IsType<IndexExpr>(stmt.Target);
+		var arrayName = Assert.IsType<NameReferenceExpr>(target.Target);
+		Assert.Equal("arr", arrayName.Name);
+		var index = Assert.IsType<IntegerLiteralExpr>(target.Index);
+		Assert.Equal("0", index.Value);
+		var value = Assert.IsType<AddExpr>(stmt.Value);
+		var left = Assert.IsType<IndexExpr>(value.Left);
+		var right = Assert.IsType<IntegerLiteralExpr>(value.Right);
+		Assert.Equal("10", right.Value);
+	}
+
 
 	[Fact]
 	public void Parse_ChainedMemberAssignment_ReturnsAssignmentStmt()

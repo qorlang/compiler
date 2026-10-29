@@ -376,7 +376,6 @@ public class DefaultSymbolChecker(IEnumerable<ASTNode> nodes)
 				break;
 			case IndexAssignStmt stmt:
 				// need to validate that @seti exist and the signature matches, grab the @seti declaration, and then use the return value to set
-				// just realized that there could theoretically be an IndexAddAssignStmt... so a better solution needs to
 
 				break;
 			case ReturnStmt stmt:
@@ -615,9 +614,9 @@ public class DefaultSymbolChecker(IEnumerable<ASTNode> nodes)
 				}
 				else
 				{
-					if (_resolvedNodeToReferenceMap[dotExpr.Target] is NamespaceReference)
+					if (_resolvedNodeToReferenceMap[dotExpr.Target] is NamespaceReference reference)
 					{
-						targetNamespaceRef = (NamespaceReference) _resolvedNodeToReferenceMap[dotExpr.Target];
+						targetNamespaceRef = reference;
 						isNamespaceProperty = true;
 					}
 					else
