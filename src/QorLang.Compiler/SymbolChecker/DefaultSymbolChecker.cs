@@ -32,11 +32,23 @@ public class DefaultSymbolChecker(IEnumerable<ASTNode> nodes)
 	readonly Dictionary<Expr, TypeReference> _exprTypeMap = [with(ReferenceEqualityComparer.Instance)];
 	readonly List<CompilationError> _errors = [];
 
+	delegate bool TypeSymbolGetter(TypeReferenceNode bode, out Symbol[] typeSymbolMatches);
+
 	TypeReference ResolveTypeReference(TypeReferenceNode node, bool allowVoid = false)
+	{
+		return ResolveTypeReference((n, out s) => _symbols.TryGetSymbol(n.TypeName, n.Location.File, out s), node, allowVoid);
+	}
+
+	TypeReference ResolveTypeReference(ScopedSymbolTable symTable, TypeReferenceNode node, bool allowVoid = false)
+	{
+		return ResolveTypeReference((n, out s) => symTable.TryGetSymbol(n.TypeName, out s), node, allowVoid);
+	}
+
+	TypeReference ResolveTypeReference(TypeSymbolGetter symbolGetter, TypeReferenceNode node, bool allowVoid = false)
 	{
 		TypeSymbol typeBase;
 
-		if (!_symbols.TryGetSymbol(node.TypeName, node.Location.File, out var returnTypeSymbolMatches))
+		if (!symbolGetter(node, out var typeSymbolMatches))
 		{
 			_errors.Add(new CompilationError(
 				$"Error QR302: Type '{node.TypeName}' is not defined.",
@@ -45,7 +57,7 @@ public class DefaultSymbolChecker(IEnumerable<ASTNode> nodes)
 
 			typeBase = TypeSymbol.ErrorType;
 		}
-		else if (returnTypeSymbolMatches[0].Type != SymbolType.Type)
+		else if (typeSymbolMatches[0].Type != SymbolType.Type)
 		{
 			_errors.Add(new CompilationError(
 				$"Error QR303: '{node.TypeName}' is not a type.",
@@ -54,7 +66,7 @@ public class DefaultSymbolChecker(IEnumerable<ASTNode> nodes)
 
 			typeBase = TypeSymbol.ErrorType;
 		}
-		else if (returnTypeSymbolMatches[0] == TypeSymbol.VoidType && !allowVoid)
+		else if (typeSymbolMatches[0] == TypeSymbol.VoidType && !allowVoid)
 		{
 			_errors.Add(new CompilationError(
 				$"Error QR304: void cannot be used in this context. Please supply a concrete type.",
@@ -65,10 +77,10 @@ public class DefaultSymbolChecker(IEnumerable<ASTNode> nodes)
 		}
 		else
 		{
-			typeBase = (TypeSymbol) returnTypeSymbolMatches[0];
+			typeBase = (TypeSymbol) typeSymbolMatches[0];
 		}
 
-		TypeReference[] typeArguments = [.. node.TypeArguments.Select(argNode => ResolveTypeReference(argNode))];
+		TypeReference[] typeArguments = [.. node.TypeArguments.Select(argNode => ResolveTypeReference(symbolGetter, argNode))];
 
 		// void may not have arguments or indirection layers
 
@@ -93,6 +105,11 @@ public class DefaultSymbolChecker(IEnumerable<ASTNode> nodes)
 		TypeReference typeReference = new(typeBase, typeArguments, node.IndirectionLayers);
 
 		return typeReference;
+	}
+
+	TypeReference GetDelegateType(FunctionOrMethodReference funcRef)
+	{
+		return null!;
 	}
 
 	public SymbolCheckerResult Check(Func<string, (GlobalSymbolTable SymbolTable, List<CompilationError> Errors)> ImportModule)
@@ -210,7 +227,7 @@ public class DefaultSymbolChecker(IEnumerable<ASTNode> nodes)
 			switch (member)
 			{
 				case FieldDeclarationNode fieldNode:
-					var fieldType = ResolveTypeReference(fieldNode.DataType, allowVoid: false);
+					var fieldType = ResolveTypeReference(symTable, fieldNode.DataType, allowVoid: false);
 
 					Symbol fieldSymbol;
 
@@ -246,13 +263,13 @@ public class DefaultSymbolChecker(IEnumerable<ASTNode> nodes)
 
 					break;
 				case MethodDefinitionNode methodNode:
-					var returnType = ResolveTypeReference(methodNode.ReturnType, allowVoid: true);
+					var returnType = ResolveTypeReference(symTable, methodNode.ReturnType, allowVoid: true);
 
 					ArgumentOrLocalSymbol[] argumentSignature = [..methodNode.Parameters.Select(
 						arg => new ArgumentOrLocalSymbol(
 							SymbolType.Argument,
 							arg.Name,
-							ResolveTypeReference(arg.DataType, allowVoid: false),
+							ResolveTypeReference(symTable, arg.DataType, allowVoid: false),
 							arg.Protections
 						)
 					)];
@@ -330,7 +347,7 @@ public class DefaultSymbolChecker(IEnumerable<ASTNode> nodes)
 				}
 				else
 				{
-					localType = ResolveTypeReference(localDeclStmt.DataType!, allowVoid: false);
+					localType = ResolveTypeReference(symTable, localDeclStmt.DataType!, allowVoid: false);
 				}
 
 				DataProtection[] protections;
@@ -488,7 +505,30 @@ public class DefaultSymbolChecker(IEnumerable<ASTNode> nodes)
 		}
 	}
 
-	public void TagLiteralExpr(Expr expr, string literalType)
+	void HandleNamedExprSymbolMatch(Symbol? symbolMatch, ScopedSymbolTable symTable, Expr expr, TypeReferenceNode[] typeArguments)
+	{
+		switch (symbolMatch)
+		{
+			case FunctionOrMethodSymbol func:
+				TypeReference[] typeArgs = [..typeArguments.Select(arg => ResolveTypeReference(symTable, arg))];
+
+				var funcRef = new FunctionOrMethodReference(func, typeArgs);
+
+				_resolvedNodeToReferenceMap[expr] = funcRef;
+				_exprTypeMap[expr] = GetDelegateType(funcRef);
+
+				break;
+			case Symbol variableSymbol:
+				var varRef = new VariableSymbolReference(variableSymbol);
+
+				_resolvedNodeToReferenceMap[expr] = varRef;
+				_exprTypeMap[expr] = varRef.DataType;
+
+				break;
+		}
+	}
+
+	void TagLiteralExpr(Expr expr, string literalType)
 	{
 		if (
 			!_symbols.TryGetSymbol(literalType, expr.Location.File, out var stringTypeSymbol) ||
@@ -507,6 +547,41 @@ public class DefaultSymbolChecker(IEnumerable<ASTNode> nodes)
 			var stringTypeRef = new TypeReference((TypeSymbol) stringTypeSymbol[0], [], []);
 
 			_exprTypeMap[expr] = stringTypeRef;
+		}
+	}
+
+	void VisitAndTagCallExpr(ScopedSymbolTable symTable, CallExpr callExpr)
+	{
+		// only a small subset of exprs are valid call targets, so we handle them here
+		// additionally, info regarding the nature of the CallExpr is useful in evaluating some
+		// exprs, which could be invalid if they aren't targets of a CallExpr
+
+		switch (callExpr.Target)
+		{
+			// DerefExpr and IndexExpr can never have ambiguity because if they are valid targets
+			// and resolve to function type, then they will always resolve to a concrete memory
+			// address, rather than an ambiguous overload reference
+			// For now, we'll just visit and tag the expr, and the type checker will ensure
+			// that they actually resolve to a delegate or callable type
+			case DerefExpr derefExpr:
+				VisitAndTagExpr(symTable, derefExpr.Target);
+				break;
+			case IndexExpr indexExpr:
+				VisitAndTagExpr(symTable, indexExpr.Target);
+				break;
+
+			// NameReferenceExpr and DotExpr can be ambiguous if they resolve to multiple overloads
+			case NameReferenceExpr nameRefExpr:
+				// then check for matches based on # of type parameters
+
+				VisitAndTagExpr(symTable, nameRefExpr);
+				break;
+			case DotExpr dotExpr:
+				// then check for matches based on # of type parameters
+				// and then check if it is properly static/instance
+
+				VisitAndTagExpr(symTable, dotExpr.Target);
+				break;
 		}
 	}
 
@@ -564,7 +639,7 @@ public class DefaultSymbolChecker(IEnumerable<ASTNode> nodes)
 
 			// dot, ref, deref, and call may not be overloaded
 			case CallExpr callExpr:
-				// validate method exists, etc.
+				VisitAndTagCallExpr(symTable, callExpr);
 				break;
 			case RefExpr refExpr:
 				VisitAndTagExpr(symTable, refExpr.Target);
@@ -605,11 +680,11 @@ public class DefaultSymbolChecker(IEnumerable<ASTNode> nodes)
 				bool isNamespaceProperty = false;
 				bool isInstanceProperty = false;
 
-				if (_exprTypeMap.ContainsKey(dotExpr.Target))
+				if (_exprTypeMap.TryGetValue(dotExpr.Target, out TypeReference? value))
 				{
 					// instance attribute, as the Target is a valued expression and not a type reference
 
-					targetTypeRef = _exprTypeMap[dotExpr.Target];
+					targetTypeRef = value;
 					isInstanceProperty = true;
 				}
 				else
@@ -625,6 +700,8 @@ public class DefaultSymbolChecker(IEnumerable<ASTNode> nodes)
 						isInstanceProperty = false;
 					}
 				}
+
+				Symbol? dotExprSymbolMatch = null;
 
 				if (isNamespaceProperty)
 				{
@@ -645,19 +722,40 @@ public class DefaultSymbolChecker(IEnumerable<ASTNode> nodes)
 					{
 						if (namespaceMemberMatches.Length > 1)
 						{
-							// Now need to check if this is the target of a call expr.
-							// need to handle case of ambiguous method reference
-							// so if the lookup is ambiguous and this expression is
-							// not the target of a call expression, then we should error out
+							// this can never be the target of a call expression.
+							foreach (var match in namespaceMemberMatches)
+							{
+								if (((FunctionOrMethodSymbol) match).TypeArgumentNames.Length == dotExpr.Property.TypeArguments.Length)
+								{
+									if (dotExprSymbolMatch != null)
+									{
+										_errors.Add(new CompilationError(
+											$"Error QR315: Namespace '{targetNamespaceRef!.FullyQualifiedName}' has multiple members named '{dotExpr.Property.Name}'. The ambiguous reference cannot be resolved.",
+											dotExpr.Location
+										));
 
-							// then check for matches based on # of type parameters
-							// and then check if it is properly static/instance
+										_exprTypeMap[expr] = TypeReference.ErrorType;
+
+										break;
+									}
+
+									dotExprSymbolMatch = match;
+								}
+							}
+
+							if (dotExprSymbolMatch == null)
+							{
+								_errors.Add(new CompilationError(
+									$"Error QR316: Namespace '{targetNamespaceRef!.FullyQualifiedName}' has no member named '{dotExpr.Property.Name}' that takes {dotExpr.Property.TypeArguments.Length} type arguments.",
+									dotExpr.Location
+								));
+
+								_exprTypeMap[expr] = TypeReference.ErrorType;
+							}
 						}
 						else
 						{
-							var varRef = new VariableSymbolReference(namespaceMemberMatches[0]);
-							_resolvedNodeToReferenceMap[dotExpr] = varRef;
-							_exprTypeMap[dotExpr] = varRef.DataType;
+							dotExprSymbolMatch = namespaceMemberMatches[0];
 						}
 					}
 				}
@@ -681,22 +779,53 @@ public class DefaultSymbolChecker(IEnumerable<ASTNode> nodes)
 					{
 						if (propertySymbolMatches.Length > 1)
 						{
-							// Now need to check if this is the target of a call expr.
-							// need to handle case of ambiguous method reference
-							// so if the lookup is ambiguous and this expression is
-							// not the target of a call expression, then we should error out
+							// this can never be the target of a call expression.
+							foreach (var match in propertySymbolMatches)
+							{
+								if (((FunctionOrMethodSymbol) match).TypeArgumentNames.Length == dotExpr.Property.TypeArguments.Length)
+								{
+									if (dotExprSymbolMatch != null)
+									{
+										_errors.Add(new CompilationError(
+											$"Error QR315: Type '{targetTypeRef!.FullyQualifiedName}' has multiple members named '{dotExpr.Property.Name}'. The ambiguous reference cannot be resolved.",
+											dotExpr.Location
+										));
 
-							// then check for matches based on # of type parameters
-							// and then check if it is properly static/instance
+										_exprTypeMap[expr] = TypeReference.ErrorType;
+
+										break;
+									}
+
+									dotExprSymbolMatch = match;
+								}
+							}
+
+							if (dotExprSymbolMatch == null)
+							{
+								_errors.Add(new CompilationError(
+									$"Error QR316: Type '{targetTypeRef!.FullyQualifiedName}' has no member named '{dotExpr.Property.Name}' that takes {dotExpr.Property.TypeArguments.Length} type arguments.",
+									dotExpr.Location
+								));
+
+								_exprTypeMap[expr] = TypeReference.ErrorType;
+							}
 						}
 						else
 						{
+							dotExprSymbolMatch = propertySymbolMatches[0];
+						}
+
+						if (dotExprSymbolMatch != null)
+						{
+							// actually... this could be a function...
 							var varRef = new VariableSymbolReference(propertySymbolMatches[0]);
 							_resolvedNodeToReferenceMap[dotExpr] = varRef;
 							_exprTypeMap[dotExpr] = varRef.DataType;
 						}
 					}
 				}
+
+				HandleNamedExprSymbolMatch(dotExprSymbolMatch, symTable, dotExpr, dotExpr.Property.TypeArguments);
 
 				break;
 			case IndexExpr indexExpr: // requires method lookup and containing expr for @geti
@@ -716,22 +845,47 @@ public class DefaultSymbolChecker(IEnumerable<ASTNode> nodes)
 				}
 				else
 				{
+					Symbol? symbolMatch = null;
+
 					if (symbolMatches.Length > 1)
 					{
-						// Now need to check if this is the target of a call expr.
-						// need to handle case of ambiguous method reference
-						// so if the lookup is ambiguous and this expression is
-						// not the target of a call expression, then we should error out
+						// this can never be the target of a call expression.
+						foreach (var match in symbolMatches)
+						{
+							if (((FunctionOrMethodSymbol) match).TypeArgumentNames.Length == nameReferenceExpr.TypeArguments.Length)
+							{
+								if (symbolMatch != null)
+								{
+									_errors.Add(new CompilationError(
+										$"Error QR315: There are multiple symbols named '{nameReferenceExpr.Name}'. The ambiguous reference cannot be resolved.",
+										nameReferenceExpr.Location
+									));
 
-						// then check for matches based on # of type parameters
-						// and then check if it is properly static/instance
+									_exprTypeMap[expr] = TypeReference.ErrorType;
+
+									break;
+								}
+
+								symbolMatch = match;
+							}
+						}
+
+						if (symbolMatch == null)
+						{
+							_errors.Add(new CompilationError(
+								$"Error QR316: There are no symbols named named '{nameReferenceExpr.Name}' that take {nameReferenceExpr.TypeArguments.Length} type arguments.",
+								nameReferenceExpr.Location
+							));
+
+							_exprTypeMap[expr] = TypeReference.ErrorType;
+						}
 					}
 					else
 					{
-						var varRef = new VariableSymbolReference(symbolMatches[0]);
-						_resolvedNodeToReferenceMap[nameReferenceExpr] = varRef;
-						_exprTypeMap[nameReferenceExpr] = varRef.DataType;
+						symbolMatch = symbolMatches[0];
 					}
+
+					HandleNamedExprSymbolMatch(symbolMatch, symTable, nameReferenceExpr, nameReferenceExpr.TypeArguments);
 				}
 				break;
 			case UnaryOpExpr unaryOpExpr:
