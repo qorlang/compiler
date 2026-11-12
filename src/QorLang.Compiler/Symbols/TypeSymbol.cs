@@ -1,6 +1,7 @@
 using QorLang.Compiler.Parser.Nodes;
+using QorLang.Compiler.Symbols.SymbolTables;
 
-namespace QorLang.Compiler.SymbolChecker.Symbols;
+namespace QorLang.Compiler.Symbols;
 
 public class TypeSymbol(
 	string name,

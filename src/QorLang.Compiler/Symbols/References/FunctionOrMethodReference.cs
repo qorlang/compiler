@@ -1,6 +1,4 @@
-using QorLang.Compiler.SymbolChecker.Symbols;
-
-namespace QorLang.Compiler.SymbolChecker.SymbolReferences;
+namespace QorLang.Compiler.Symbols.References;
 
 public class FunctionOrMethodReference(FunctionOrMethodSymbol funcSymbol, TypeReference[] typeArguments) : SymbolReference
 {

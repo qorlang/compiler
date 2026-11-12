@@ -3,10 +3,11 @@ using QorLang.Compiler.Lexer;
 using QorLang.Compiler.Parser.Nodes;
 using QorLang.Compiler.Parser.Nodes.CodeStatements;
 using QorLang.Compiler.Parser.Nodes.Expressions;
-using QorLang.Compiler.SymbolChecker.SymbolReferences;
-using QorLang.Compiler.SymbolChecker.Symbols;
+using QorLang.Compiler.Symbols;
+using QorLang.Compiler.Symbols.References;
+using QorLang.Compiler.Symbols.SymbolTables;
 
-namespace QorLang.Compiler.SymbolChecker;
+namespace QorLang.Compiler.NodeTagger;
 
 using SymbolCheckerResult = (
 	GlobalSymbolTable GlobalSymbols,
@@ -20,12 +21,12 @@ using SymbolCheckerResult = (
 /// Checks symbols and assigns inferred types to expressions. Does not perform assignment validity or type compatibility checks.
 /// </summary>
 /// <param name="nodes"></param>
-public class DefaultSymbolChecker(IEnumerable<ASTNode> nodes)
+public class InitialNodeTagger(IEnumerable<ASTNode> nodes)
 {
 	readonly ASTNode[] _nodes = [..nodes];
 	readonly GlobalSymbolTable _symbols = new();
 
-	// types can have scoped symbol tables too because their members do not need to be qualified and they may also have type arguments
+	// types can have scoped symbol tables too because their members do not need to be qualified, and they may also have type arguments
 	readonly Dictionary<Symbol, ScopedSymbolTable> _scopedSymbolTables = [];
 	readonly Dictionary<ASTNode, SymbolReference> _resolvedNodeToReferenceMap = [with(ReferenceEqualityComparer.Instance)];
 	readonly Dictionary<ASTNode, Symbol> _resolvedNodeToDeclarationMap = [with(ReferenceEqualityComparer.Instance)];
@@ -42,6 +43,25 @@ public class DefaultSymbolChecker(IEnumerable<ASTNode> nodes)
 	TypeReference ResolveTypeReference(ScopedSymbolTable symTable, TypeReferenceNode node, bool allowVoid = false)
 	{
 		return ResolveTypeReference((n, out s) => symTable.TryGetSymbol(n.TypeName, out s), node, allowVoid);
+	}
+
+	void AddTypeParameterSymbols(ScopedSymbolTable symTable, string[] typeParameters, TokenLocation location)
+	{
+		// assume typeParameters are distinct, we only have to validate that there are no name conflicts
+		foreach (var typeParam in typeParameters)
+		{
+			if (symTable.TryGetSymbol(typeParam, out Symbol[] matches))
+			{
+				// name conflict!!!
+				// add compilation error
+				continue;
+			}
+
+			symTable.AddSymbol(
+				new TypeArgumentTypeSymbol(typeParam),
+				location
+			);
+		}
 	}
 
 	TypeReference ResolveTypeReference(TypeSymbolGetter symbolGetter, TypeReferenceNode node, bool allowVoid = false)
@@ -106,7 +126,8 @@ public class DefaultSymbolChecker(IEnumerable<ASTNode> nodes)
 
 		return typeReference;
 	}
-
+	
+	// creates and/or returns the existing delegate type for a specified function reference
 	TypeReference GetDelegateType(FunctionOrMethodReference funcRef)
 	{
 		return null!;
@@ -114,7 +135,7 @@ public class DefaultSymbolChecker(IEnumerable<ASTNode> nodes)
 
 	public SymbolCheckerResult Check(Func<string, (GlobalSymbolTable SymbolTable, List<CompilationError> Errors)> ImportModule)
 	{
-		string currentNamespace = string.Empty;
+		var currentNamespace = string.Empty;
 
 		foreach (var node in _nodes)
 		{
@@ -153,7 +174,9 @@ public class DefaultSymbolChecker(IEnumerable<ASTNode> nodes)
 					else
 					{
 						_resolvedNodeToDeclarationMap[typeDefNode] = typeSymbol;
-						// TODO: create scoped symbol table, visit type node members
+
+						ScopedSymbolTable symTable = new(_symbols, typeDefNode.Location.File, currentNamespace, typeSymbol);
+						VisitTypeDefinitionMembers(typeSymbol, symTable, typeDefNode);
 					}
 
 					break;
@@ -310,10 +333,13 @@ public class DefaultSymbolChecker(IEnumerable<ASTNode> nodes)
 					else
 					{
 						_resolvedNodeToDeclarationMap[methodNode] = methodSymbol;
-						// TODO: create scoped symbol table, visit method body
+						
 						// these are the only scope symtables that will contain a file, namespace, AND type context
-						// the bound methods will not come with a 'this' symbol as ThisExpr exists, but
-						// only bound methods should allow 'this' to be used in their bodies.
+						// Bound methods will not come with a 'this' symbol, as 'this' is referenced through ThisExpr
+						// and not NameReferenceExpr, but only bound methods should allow 'this' to be used in their bodies
+						ScopedSymbolTable methodSymTable = new(symTable, symTable.FileContext, symTable.NamespaceContext, symTable.TypeContext);
+						
+						VisitMethodBody(methodSymTable, methodNode);
 					}
 
 					break;
@@ -518,8 +544,8 @@ public class DefaultSymbolChecker(IEnumerable<ASTNode> nodes)
 				_exprTypeMap[expr] = GetDelegateType(funcRef);
 
 				break;
-			case Symbol variableSymbol:
-				var varRef = new VariableSymbolReference(variableSymbol);
+			case not null:
+				var varRef = new VariableSymbolReference(symbolMatch);
 
 				_resolvedNodeToReferenceMap[expr] = varRef;
 				_exprTypeMap[expr] = varRef.DataType;
@@ -861,7 +887,7 @@ public class DefaultSymbolChecker(IEnumerable<ASTNode> nodes)
 										nameReferenceExpr.Location
 									));
 
-									_exprTypeMap[expr] = TypeReference.ErrorType;
+									_exprTypeMap[expr] = TypeReference.ErrorType;	
 
 									break;
 								}

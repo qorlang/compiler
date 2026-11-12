@@ -1,9 +1,8 @@
 using QorLang.Compiler.Errors;
 using QorLang.Compiler.Lexer;
-using QorLang.Compiler.SymbolChecker.SymbolReferences;
-using QorLang.Compiler.SymbolChecker.Symbols;
+using QorLang.Compiler.Symbols.References;
 
-namespace QorLang.Compiler.SymbolChecker;
+namespace QorLang.Compiler.Symbols.SymbolTables;
 
 // TODO: need to somehow support method/function types
 public class GlobalSymbolTable : SymbolTable

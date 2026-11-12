@@ -1,4 +1,4 @@
-namespace QorLang.Compiler.SymbolChecker.SymbolReferences;
+namespace QorLang.Compiler.Symbols.References;
 
 public class NamespaceReference(string enclosingNamespace,string name) : SymbolReference
 {

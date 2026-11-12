@@ -1,4 +1,4 @@
-namespace QorLang.Compiler.SymbolChecker.Symbols;
+namespace QorLang.Compiler.Symbols.SymbolTables;
 
 public enum SymbolType
 {

@@ -1,6 +1,6 @@
 using QorLang.Compiler.Parser.Nodes;
 
-namespace QorLang.Compiler.SymbolChecker.Symbols;
+namespace QorLang.Compiler.Symbols;
 
 // This is actually a reference to a type argument, so it cannot have type arguments itself.
 // Its real type will be resolved by the JIT compiler when generics are instantiated.

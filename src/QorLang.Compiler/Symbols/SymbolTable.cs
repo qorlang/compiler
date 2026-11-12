@@ -1,8 +1,7 @@
 using QorLang.Compiler.Errors;
 using QorLang.Compiler.Lexer;
-using QorLang.Compiler.SymbolChecker.Symbols;
 
-namespace QorLang.Compiler.SymbolChecker;
+namespace QorLang.Compiler.Symbols;
 
 public abstract class SymbolTable
 {

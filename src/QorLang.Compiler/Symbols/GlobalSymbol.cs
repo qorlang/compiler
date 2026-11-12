@@ -1,6 +1,7 @@
-using QorLang.Compiler.SymbolChecker.SymbolReferences;
+using QorLang.Compiler.Symbols.References;
+using QorLang.Compiler.Symbols.SymbolTables;
 
-namespace QorLang.Compiler.SymbolChecker.Symbols;
+namespace QorLang.Compiler.Symbols;
 
 public class GlobalSymbol(
 	string name,

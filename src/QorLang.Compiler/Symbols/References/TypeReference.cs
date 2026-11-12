@@ -1,7 +1,6 @@
 using QorLang.Compiler.Parser.Nodes;
-using QorLang.Compiler.SymbolChecker.Symbols;
 
-namespace QorLang.Compiler.SymbolChecker.SymbolReferences;
+namespace QorLang.Compiler.Symbols.References;
 
 public class TypeReference(TypeSymbol typeSymbol, TypeReference[] typeArguments, IndirectionLayer[] indirectionLayers) : SymbolReference
 {
