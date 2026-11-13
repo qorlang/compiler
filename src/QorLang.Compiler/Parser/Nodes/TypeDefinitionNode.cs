@@ -3,11 +3,11 @@ using QorLang.Compiler.Lexer;
 
 namespace QorLang.Compiler.Parser.Nodes;
 
-public class TypeDefinitionNode(string name, AccessLevel accessLevel, string[] typeParameters, TypeMemberDeclarationNode[] memberDeclarations, TokenLocation location) : ASTNode(location)
+public class TypeDefinitionNode(string name, AccessLevel accessLevel, TypeParameterDeclarationNode[] typeParameters, TypeMemberDeclarationNode[] memberDeclarations, TokenLocation location) : ASTNode(location)
 {
 	public readonly string Name = name;
 	public readonly AccessLevel AccessLevel = accessLevel;
-	public readonly string[] TypeParameters = typeParameters;
+	public readonly TypeParameterDeclarationNode[] TypeParameters = typeParameters;
 	public readonly TypeMemberDeclarationNode[] MemberDeclarations = memberDeclarations;
 
 	public override bool Equals(object? obj)
@@ -24,5 +24,5 @@ public class TypeDefinitionNode(string name, AccessLevel accessLevel, string[] t
 		return HashCode.Combine(Name, AccessLevel, NodeUtils.GetArrayHash(TypeParameters), NodeUtils.GetArrayHash(MemberDeclarations));
 	}
 
-	public override string ToString() => JsonSerializer.Serialize(new { type = nameof(TypeDefinitionNode), name = Name, accessLevel = AccessLevel.ToString(), typeParameters = TypeParameters, memberDeclarations = MemberDeclarations.Select(m => JsonDocument.Parse(m.ToString()).RootElement).ToArray() });
+	public override string ToString() => JsonSerializer.Serialize(new { type = nameof(TypeDefinitionNode), name = Name, accessLevel = AccessLevel.ToString(), typeParameters = TypeParameters.Select(p => JsonDocument.Parse(p.ToString()).RootElement).ToArray(), memberDeclarations = MemberDeclarations.Select(m => JsonDocument.Parse(m.ToString()).RootElement).ToArray() });
 }

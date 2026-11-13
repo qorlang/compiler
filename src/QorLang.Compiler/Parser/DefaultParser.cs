@@ -1779,7 +1779,7 @@ public class DefaultParser(IEnumerable<Token> tokens)
 		bool isStatic = _currentDeclIsStatic;
 		_currentDeclIsStatic = false;
 
-		List<string> typeParameters = [];
+		List<TypeParameterDeclarationNode> typeParameters = [];
 		List<ArgDeclarationNode> parameters = [];
 
 		var token = GetNextToken();
@@ -1798,7 +1798,7 @@ public class DefaultParser(IEnumerable<Token> tokens)
 					return ErrorOutOfCurrentContext();
 				}
 
-				typeParameters.Add(typeParamToken.Value);
+				typeParameters.Add(new(typeParamToken.Value, typeParamToken.Location));
 
 				var nextToken = GetNextToken();
 
@@ -1806,16 +1806,15 @@ public class DefaultParser(IEnumerable<Token> tokens)
 				{
 					continue;
 				}
-				else if (nextToken.Type == TokenType.GreaterThan)
+				
+				if (nextToken.Type == TokenType.GreaterThan)
 				{
 					break;
 				}
-				else
-				{
-					_errors.Add(GenerateError($"Error QR202: Expected ',' or '>' in type parameter list, but got {TokenUtils.ToString(nextToken)} instead.", nextToken));
+				
+				_errors.Add(GenerateError($"Error QR202: Expected ',' or '>' in type parameter list, but got {TokenUtils.ToString(nextToken)} instead.", nextToken));
 
-					return ErrorOutOfCurrentContext();
-				}
+				return ErrorOutOfCurrentContext();
 			}
 
 			if (!ExpectNextToken(TokenType.LeftParen))
@@ -2041,7 +2040,7 @@ public class DefaultParser(IEnumerable<Token> tokens)
 
 		if (!ExpectNextToken(TokenType.Identifier, out var nameToken)) return ErrorOutOfCurrentContext();
 
-		List<string> typeParameters = [];
+		List<TypeParameterDeclarationNode> typeParameters = [];
 
 		var token = GetNextToken();
 
@@ -2058,7 +2057,7 @@ public class DefaultParser(IEnumerable<Token> tokens)
 					return ErrorOutOfCurrentContext();
 				}
 
-				typeParameters.Add(typeParamToken.Value);
+				typeParameters.Add(new(typeParamToken.Value, typeParamToken.Location));
 
 				var nextToken = GetNextToken();
 
@@ -2114,7 +2113,8 @@ public class DefaultParser(IEnumerable<Token> tokens)
 
 				break;
 			}
-			else if (nextToken.Type == TokenType.Keyword)
+			
+			if (nextToken.Type == TokenType.Keyword)
 			{
 				if (nextToken.Value == "type")
 				{
@@ -2122,7 +2122,8 @@ public class DefaultParser(IEnumerable<Token> tokens)
 
 					return ErrorOutOfCurrentCodeBlock();
 				}
-				else if (nextToken.Value == "pub")
+				
+				if (nextToken.Value == "pub")
 				{
 					if (_currentDeclIsPublic)
 					{
@@ -2181,8 +2182,7 @@ public class DefaultParser(IEnumerable<Token> tokens)
 				return ErrorOutOfCurrentCodeBlock();
 			}
 		}
-
-
+		
 		return new TypeDefinitionNode(nameToken.Value, typeIsPublic ? AccessLevel.Public : AccessLevel.Private, [..typeParameters], [..memberDeclarations],nameToken.Location);
 	}
 

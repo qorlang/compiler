@@ -8,7 +8,7 @@ public class MethodDefinitionNode(
 	string name,
 	AccessLevel accessLevel,
 	ArgDeclarationNode[] parameters,
-	string[] typeParameters,
+	TypeParameterDeclarationNode[] typeParameters,
 	TypeReferenceNode returnType,
 	DataProtection protectionOnSelf,
 	CodeStmt[] body,
@@ -19,7 +19,7 @@ public class MethodDefinitionNode(
 	public readonly string Name = name;
 	public readonly AccessLevel AccessLevel = accessLevel;
 	public readonly ArgDeclarationNode[] Parameters = parameters;
-	public readonly string[] TypeParameters = typeParameters;
+	public readonly TypeParameterDeclarationNode[] TypeParameters = typeParameters;
 	public readonly TypeReferenceNode ReturnType = returnType;
 	public readonly DataProtection ProtectionOnSelf = protectionOnSelf;
 	public readonly CodeStmt[] Body = body;
@@ -27,7 +27,7 @@ public class MethodDefinitionNode(
 
 	public override bool Equals(object? obj)
 	{
-		if (obj is not FunctionDefinitionNode other) return false;
+		if (obj is not MethodDefinitionNode other) return false;
 		return Name == other.Name && AccessLevel == other.AccessLevel &&
 			Parameters.SequenceEqual(other.Parameters) &&
 			TypeParameters.SequenceEqual(other.TypeParameters) &&
@@ -40,5 +40,5 @@ public class MethodDefinitionNode(
 		return HashCode.Combine(Name, AccessLevel, NodeUtils.GetArrayHash(Parameters), NodeUtils.GetArrayHash(TypeParameters), ReturnType, ProtectionOnSelf, NodeUtils.GetArrayHash(Body));
 	}
 
-	public override string ToString() => JsonSerializer.Serialize(new { type = nameof(MethodDefinitionNode), name = Name, accessLevel = AccessLevel.ToString(), parameters = Parameters.Select(p => JsonDocument.Parse(p.ToString()).RootElement).ToArray(), typeParameters = TypeParameters, returnType = JsonDocument.Parse(ReturnType.ToString()).RootElement, protectionOnSelf = ProtectionOnSelf.ToString(), body = Body.Select(b => JsonDocument.Parse(b.ToString()).RootElement).ToArray() });
+	public override string ToString() => JsonSerializer.Serialize(new { type = nameof(MethodDefinitionNode), name = Name, accessLevel = AccessLevel.ToString(), parameters = Parameters.Select(p => JsonDocument.Parse(p.ToString()).RootElement).ToArray(), typeParameters = TypeParameters.Select(p => JsonDocument.Parse(p.ToString()).RootElement).ToArray(), returnType = JsonDocument.Parse(ReturnType.ToString()).RootElement, protectionOnSelf = ProtectionOnSelf.ToString(), body = Body.Select(b => JsonDocument.Parse(b.ToString()).RootElement).ToArray() });
 }

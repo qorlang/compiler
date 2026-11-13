@@ -42,7 +42,7 @@ public class TypeParsingTests
 		var typeNode = Assert.IsType<TypeDefinitionNode>(nodes.First());
 		Assert.Equal("Vec", typeNode.Name);
 		Assert.Single(typeNode.TypeParameters);
-		Assert.Contains("T", typeNode.TypeParameters);
+		Assert.Equal("T", typeNode.TypeParameters[0].Name);
 	}
 
 	[Fact]
@@ -60,8 +60,8 @@ public class TypeParsingTests
 
 		var typeNode = Assert.IsType<TypeDefinitionNode>(nodes.First());
 		Assert.Equal(2, typeNode.TypeParameters.Length);
-		Assert.Contains("K", typeNode.TypeParameters);
-		Assert.Contains("V", typeNode.TypeParameters);
+		Assert.Equal("K", typeNode.TypeParameters[0].Name);
+		Assert.Equal("V", typeNode.TypeParameters[1].Name);
 	}
 
 	[Fact]
@@ -235,7 +235,7 @@ public class TypeParsingTests
 
 		var methodNode = Assert.IsType<MethodDefinitionNode>(typeNode.MemberDeclarations[0]);
 		Assert.Single(methodNode.TypeParameters);
-		Assert.Contains("T", methodNode.TypeParameters);
+		Assert.Equal("T", methodNode.TypeParameters[0].Name);
 	}
 
 	[Fact]

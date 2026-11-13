@@ -247,7 +247,7 @@ public class TopLevelStatements
 		Assert.Empty(errors);
 		var funcNode = Assert.IsType<FunctionDefinitionNode>(nodes.First());
 		Assert.Single(funcNode.TypeParameters);
-		Assert.Equal("T", funcNode.TypeParameters[0]);
+		Assert.Equal("T", funcNode.TypeParameters[0].Name);
 	}
 
 	[Fact]
@@ -264,8 +264,8 @@ public class TopLevelStatements
 		Assert.Empty(errors);
 		var funcNode = Assert.IsType<FunctionDefinitionNode>(nodes.First());
 		Assert.Equal(2, funcNode.TypeParameters.Length);
-		Assert.Equal("K", funcNode.TypeParameters[0]);
-		Assert.Equal("V", funcNode.TypeParameters[1]);
+		Assert.Equal("K", funcNode.TypeParameters[0].Name);
+		Assert.Equal("V", funcNode.TypeParameters[1].Name);
 	}
 
 	[Fact]

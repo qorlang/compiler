@@ -8,7 +8,7 @@ public class FunctionDefinitionNode(
 	string name,
 	AccessLevel accessLevel,
 	ArgDeclarationNode[] parameters,
-	string[] typeParameters,
+	TypeParameterDeclarationNode[] typeParameters,
 	TypeReferenceNode returnType,
 	CodeStmt[] body,
 	TokenLocation location
@@ -17,7 +17,7 @@ public class FunctionDefinitionNode(
 	public readonly string Name = name;
 	public readonly AccessLevel AccessLevel = accessLevel;
 	public readonly ArgDeclarationNode[] Parameters = parameters;
-	public readonly string[] TypeParameters = typeParameters;
+	public readonly TypeParameterDeclarationNode[] TypeParameters = typeParameters;
 	public readonly TypeReferenceNode ReturnType = returnType;
 	public readonly CodeStmt[] Body = body;
 
@@ -36,5 +36,5 @@ public class FunctionDefinitionNode(
 		return HashCode.Combine(Name, AccessLevel, NodeUtils.GetArrayHash(Parameters), NodeUtils.GetArrayHash(TypeParameters), ReturnType, NodeUtils.GetArrayHash(Body));
 	}
 
-	public override string ToString() => JsonSerializer.Serialize(new { type = nameof(FunctionDefinitionNode), name = Name, accessLevel = AccessLevel.ToString(), parameters = Parameters.Select(p => JsonDocument.Parse(p.ToString()).RootElement).ToArray(), typeParameters = TypeParameters, returnType = JsonDocument.Parse(ReturnType.ToString()).RootElement, body = Body.Select(b => JsonDocument.Parse(b.ToString()).RootElement).ToArray() });
+	public override string ToString() => JsonSerializer.Serialize(new { type = nameof(FunctionDefinitionNode), name = Name, accessLevel = AccessLevel.ToString(), parameters = Parameters.Select(p => JsonDocument.Parse(p.ToString()).RootElement).ToArray(), typeParameters = TypeParameters.Select(p => JsonDocument.Parse(p.ToString()).RootElement).ToArray(), returnType = JsonDocument.Parse(ReturnType.ToString()).RootElement, body = Body.Select(b => JsonDocument.Parse(b.ToString()).RootElement).ToArray() });
 }

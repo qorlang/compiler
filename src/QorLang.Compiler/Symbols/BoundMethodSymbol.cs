@@ -7,12 +7,12 @@ namespace QorLang.Compiler.Symbols;
 public class BoundMethodSymbol(
 	string name,
 	TypeReference returnType,
-	string[] typeArgumentNames,
+	TypeParameterDeclarationNode[] typeArguments,
 	ArgumentOrLocalSymbol[] signature,
 	AccessLevel accessLevel,
 	TypeSymbol enclosingType,
 	DataProtection protectionOnSelf
-) : FunctionOrMethodSymbol(SymbolType.BoundMethod, name, returnType, typeArgumentNames, signature, accessLevel)
+) : FunctionOrMethodSymbol(SymbolType.BoundMethod, name, returnType, typeArguments, signature, accessLevel)
 {
 	public readonly TypeSymbol EnclosingType = enclosingType;
 	public readonly DataProtection ProtectionOnSelf = protectionOnSelf;

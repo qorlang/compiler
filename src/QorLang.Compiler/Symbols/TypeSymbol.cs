@@ -6,14 +6,15 @@ namespace QorLang.Compiler.Symbols;
 public class TypeSymbol(
 	string name,
 	string namespaceName,
-	string[] typeArgumentNames,
+	TypeParameterDeclarationNode[] typeArguments,
 	AccessLevel accessLevel
 ) : Symbol(SymbolType.Type, name)
 {
 	public readonly string Namespace = namespaceName;
-	public readonly string[] TypeArgumentNames = typeArgumentNames;
+	public readonly TypeParameterDeclarationNode[] TypeArguments = typeArguments;
+	public readonly string[] TypeArgumentNames = [..typeArguments.Select(node => node.Name)];
 	public readonly AccessLevel AccessLevel = accessLevel;
-	public readonly string InstantiatedName = typeArgumentNames.Length == 0 ? name : $"{name}<{string.Join(", ", typeArgumentNames)}>";
+	public readonly string InstantiatedName = typeArguments.Length == 0 ? name : $"{name}<{string.Join(", ", typeArguments)}>";
 	public string FullyQualifiedName => string.IsNullOrEmpty(Namespace) ? InstantiatedName : $"{Namespace}.{InstantiatedName}";
 
 	public static readonly TypeSymbol ErrorType = new("::error_type", string.Empty, [], AccessLevel.Public);

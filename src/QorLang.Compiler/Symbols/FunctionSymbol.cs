@@ -7,11 +7,11 @@ namespace QorLang.Compiler.Symbols;
 public class FunctionSymbol(
 	string name,
 	TypeReference returnType,
-	string[] typeArgumentNames,
+	TypeParameterDeclarationNode[] typeArguments,
 	ArgumentOrLocalSymbol[] signature,
 	AccessLevel accessLevel,
 	string namespaceName
-) : FunctionOrMethodSymbol(SymbolType.Function, name, returnType, typeArgumentNames, signature, accessLevel)
+) : FunctionOrMethodSymbol(SymbolType.Function, name, returnType, typeArguments, signature, accessLevel)
 {
 	public readonly string Namespace = namespaceName;
 	public override string FullyQualifiedName => string.IsNullOrEmpty(Namespace) ? Name : $"{Namespace}.{Name}";

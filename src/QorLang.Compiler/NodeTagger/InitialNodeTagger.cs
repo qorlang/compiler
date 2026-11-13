@@ -45,22 +45,13 @@ public class InitialNodeTagger(IEnumerable<ASTNode> nodes)
 		return ResolveTypeReference((n, out s) => symTable.TryGetSymbol(n.TypeName, out s), node, allowVoid);
 	}
 
-	void AddTypeParameterSymbols(ScopedSymbolTable symTable, string[] typeParameters, TokenLocation location)
+	void AddTypeParameterSymbols(ScopedSymbolTable symTable, TypeParameterDeclarationNode[] typeParameters)
 	{
 		// assume typeParameters are distinct, we only have to validate that there are no name conflicts
 		foreach (var typeParam in typeParameters)
 		{
-			if (symTable.TryGetSymbol(typeParam, out Symbol[] matches))
-			{
-				// name conflict!!!
-				// add compilation error
-				continue;
-			}
-
-			symTable.AddSymbol(
-				new TypeArgumentTypeSymbol(typeParam),
-				location
-			);
+			// this will handle name conflict errors automatically
+			_errors.AddRange(symTable.AddSymbol(new TypeArgumentTypeSymbol(typeParam.Name), typeParam.Location));
 		}
 	}
 
