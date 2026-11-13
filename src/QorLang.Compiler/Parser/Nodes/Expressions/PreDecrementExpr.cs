@@ -3,7 +3,7 @@ using QorLang.Compiler.Lexer;
 
 namespace QorLang.Compiler.Parser.Nodes.Expressions;
 
-public class PreDecrementExpr(Expr target, TokenLocation location) : UnaryOpExpr(target, location)
+public class PreDecrementExpr(Expr target, TokenLocation location) : UnaryOpExpr(target, "dec", location)
 {
 
 	public override bool Equals(object? obj)

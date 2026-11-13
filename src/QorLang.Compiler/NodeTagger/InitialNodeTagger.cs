@@ -117,7 +117,7 @@ public class InitialNodeTagger(IEnumerable<ASTNode> nodes)
 
 		return typeReference;
 	}
-	
+
 	// creates and/or returns the existing delegate type for a specified function reference
 	TypeReference GetDelegateType(FunctionOrMethodReference funcRef)
 	{
@@ -167,6 +167,8 @@ public class InitialNodeTagger(IEnumerable<ASTNode> nodes)
 						_resolvedNodeToDeclarationMap[typeDefNode] = typeSymbol;
 
 						ScopedSymbolTable symTable = new(_symbols, typeDefNode.Location.File, currentNamespace, typeSymbol);
+
+						AddTypeParameterSymbols(symTable, typeDefNode.TypeParameters);
 						VisitTypeDefinitionMembers(typeSymbol, symTable, typeDefNode);
 					}
 
@@ -201,7 +203,11 @@ public class InitialNodeTagger(IEnumerable<ASTNode> nodes)
 					else
 					{
 						_resolvedNodeToDeclarationMap[functionDefinitionNode] = functionSymbol;
-						// TODO: create scoped symbol table, visit function body
+
+						ScopedSymbolTable symTable = new(_symbols, functionDefinitionNode.Location.File, currentNamespace);
+						AddTypeParameterSymbols(symTable, functionDefinitionNode.TypeParameters);
+
+						VisitFunctionBody(symTable, functionDefinitionNode);
 					}
 
 					break;
@@ -236,6 +242,29 @@ public class InitialNodeTagger(IEnumerable<ASTNode> nodes)
 
 	void VisitTypeDefinitionMembers(TypeSymbol enclosingType, ScopedSymbolTable symTable, TypeDefinitionNode typeDefNode)
 	{
+		// A few notes about constructing the `thisType`.
+		// We can pass empty arrays for the typeArguments and indirectionLayers
+		// of the type arguments of the 'this' type because typeArguments themselves
+		// may not be defined with further typeArguments or indirection layers
+		// We also use the symbol table to grab these type arguments' symbols, but this
+		// is probably a bad idea considering the very next/previous method up the chain
+		// (the caller of this method) has access to the TypeArgumentTypeSymbol objects
+		// of the type parameters
+		TypeReference thisType = new TypeReference(
+			enclosingType,
+			[
+				..enclosingType.TypeArgumentNames
+					.Select(name =>
+					{
+						// We assume the symbol exists here & is a TypeSymbol, which is dangerous!
+						symTable.TryGetSymbol(name, out var symbolMatches);
+
+						return new TypeReference((TypeSymbol)symbolMatches[0], [], []);
+					})
+			],
+			[]
+		);
+
 		foreach (var member in typeDefNode.MemberDeclarations)
 		{
 			switch (member)
@@ -313,6 +342,8 @@ public class InitialNodeTagger(IEnumerable<ASTNode> nodes)
 							enclosingType,
 							methodNode.ProtectionOnSelf
 						);
+
+
 					}
 
 					var methodConflictErrors = symTable.AddSymbol(methodSymbol, methodNode.Location);
@@ -324,13 +355,14 @@ public class InitialNodeTagger(IEnumerable<ASTNode> nodes)
 					else
 					{
 						_resolvedNodeToDeclarationMap[methodNode] = methodSymbol;
-						
+
 						// these are the only scope symtables that will contain a file, namespace, AND type context
 						// Bound methods will not come with a 'this' symbol, as 'this' is referenced through ThisExpr
 						// and not NameReferenceExpr, but only bound methods should allow 'this' to be used in their bodies
 						ScopedSymbolTable methodSymTable = new(symTable, symTable.FileContext, symTable.NamespaceContext, symTable.TypeContext);
-						
-						VisitMethodBody(methodSymTable, methodNode);
+
+						AddTypeParameterSymbols(methodSymTable, methodNode.TypeParameters);
+						VisitMethodBody(methodSymTable, methodNode, methodNode.IsStatic ? null : thisType);
 					}
 
 					break;
@@ -338,15 +370,23 @@ public class InitialNodeTagger(IEnumerable<ASTNode> nodes)
 		}
 	}
 
-	void VisitMethodBody(ScopedSymbolTable symTable, MethodDefinitionNode methodNode)
+	void VisitMethodBody(ScopedSymbolTable symTable, MethodDefinitionNode methodNode, TypeReference? thisType)
 	{
 		foreach (var statement in methodNode.Body)
 		{
-			VisitAndTagStmt(symTable, statement);
+			VisitAndTagStmt(symTable, statement, thisType);
 		}
 	}
 
-	void VisitAndTagStmt(ScopedSymbolTable symTable, CodeStmt statement)
+	void VisitFunctionBody(ScopedSymbolTable symTable, FunctionDefinitionNode functionNode)
+	{
+		foreach (var statement in functionNode.Body)
+		{
+			VisitAndTagStmt(symTable, statement, null);
+		}
+	}
+
+	void VisitAndTagStmt(ScopedSymbolTable symTable, CodeStmt statement, TypeReference? thisType)
 	{
 		switch (statement)
 		{
@@ -355,7 +395,7 @@ public class InitialNodeTagger(IEnumerable<ASTNode> nodes)
 
 				if (localDeclStmt.Initializer is not null)
 				{
-					VisitAndTagExpr(symTable, localDeclStmt.Initializer);
+					VisitAndTagExpr(symTable, localDeclStmt.Initializer, thisType);
 				}
 
 				if (localDeclStmt.IsInference)
@@ -383,7 +423,6 @@ public class InitialNodeTagger(IEnumerable<ASTNode> nodes)
 					Array.Fill(protections, DataProtection.ReadOnly);
 				}
 
-
 				var localSymbol = new ArgumentOrLocalSymbol(
 					SymbolType.Local,
 					localDeclStmt.Name,
@@ -403,19 +442,61 @@ public class InitialNodeTagger(IEnumerable<ASTNode> nodes)
 				}
 
 				break;
+
+			// NOTE: For all the below assign statements (AssignStmt...ModAssignStmt), we don't
+			// actually know if we're allowed to assign to the LHS based off of the
+			// DataProtection on the LHS, but this will be checked by the DataProtectionChecker
+			// in the fifth phase after the complete Binder, which itself runs after this phase
+
 			case AssignStmt stmt:
-				VisitAndTagExpr(symTable, stmt.Target);
-				VisitAndTagExpr(symTable, stmt.Value);
+				VisitAndTagExpr(symTable, stmt.Value, thisType);
+
+				switch (stmt.Target)
+				{
+					case IndexExpr indexExpr:
+						// need to validate that @seti exists and the signature matches
+						VisitAndTagExpr(symTable, indexExpr.Target, thisType);
+						VisitAndTagExpr(symTable, indexExpr.Index, thisType);
+
+						var indexableTargetType = _exprTypeMap[indexExpr.Target];
+
+						// NOTE: we don't even know if indexableTargetType is resolved here
+						// the variable could have been declared by inference, for example
+
+						ValidateOperatorOverloadExists(indexableTargetType, "seti", 2, indexExpr.Location);
+
+						// this eventually compiles down to something like:
+						// indexable.@seti(index, value)
+						break;
+					case var target:
+						VisitAndTagExpr(symTable, target, thisType);
+						break;
+				}
 
 				break;
-			case IndexAssignStmt stmt:
-				// need to validate that @seti exist and the signature matches, grab the @seti declaration, and then use the return value to set
+			case AddAssignStmt stmt:
+				VisitOpAssignment(symTable, stmt.Target, stmt.Value, "add", stmt.Location, thisType);
+
+				break;
+			case SubAssignStmt stmt:
+				VisitOpAssignment(symTable, stmt.Target, stmt.Value, "sub", stmt.Location, thisType);
+
+				break;
+			case MulAssignStmt stmt:
+				VisitOpAssignment(symTable, stmt.Target, stmt.Value, "mul", stmt.Location, thisType);
+
+				break;
+			case DivAssignStmt stmt:
+				VisitOpAssignment(symTable, stmt.Target, stmt.Value, "div", stmt.Location, thisType);
+				break;
+			case ModAssignStmt stmt:
+				VisitOpAssignment(symTable, stmt.Target, stmt.Value, "mod", stmt.Location, thisType);
 
 				break;
 			case ReturnStmt stmt:
 				if (stmt.Value is not null)
 				{
-					VisitAndTagExpr(symTable, stmt.Value);
+					VisitAndTagExpr(symTable, stmt.Value, thisType);
 				}
 
 				break;
@@ -424,69 +505,110 @@ public class InitialNodeTagger(IEnumerable<ASTNode> nodes)
 
 				if (stmt.Initializer is not null)
 				{
-					VisitAndTagStmt(forScope, stmt.Initializer);
+					VisitAndTagStmt(forScope, stmt.Initializer, thisType);
 				}
 
 				if (stmt.Condition is not null)
 				{
-					VisitAndTagExpr(forScope, stmt.Condition);
+					VisitAndTagExpr(forScope, stmt.Condition, thisType);
 				}
 
 				if (stmt.Increment is not null)
 				{
-					VisitAndTagStmt(forScope, stmt.Increment);
+					VisitAndTagStmt(forScope, stmt.Increment, thisType);
 				}
 
 				foreach (var bodyStmt in stmt.Body)
 				{
-					VisitAndTagStmt(forScope, bodyStmt);
+					VisitAndTagStmt(forScope, bodyStmt, thisType);
 				}
 
 				break;
 			case WhileStmt stmt:
 				var whileScope = new ScopedSymbolTable(symTable, symTable.FileContext, symTable.NamespaceContext, symTable.TypeContext);
 
-				VisitAndTagExpr(symTable, stmt.Condition);
+				VisitAndTagExpr(symTable, stmt.Condition, thisType);
 
 				foreach (var bodyStmt in stmt.Body)
 				{
-					VisitAndTagStmt(whileScope, bodyStmt);
+					VisitAndTagStmt(whileScope, bodyStmt, thisType);
 				}
 
 				break;
 			case IfStmt stmt:
 				var ifScope = new ScopedSymbolTable(symTable, symTable.FileContext, symTable.NamespaceContext, symTable.TypeContext);
 
-				VisitAndTagExpr(symTable, stmt.Condition);
+				VisitAndTagExpr(symTable, stmt.Condition, thisType);
 
 				foreach (var bodyStmt in stmt.ThenBody)
 				{
-					VisitAndTagStmt(ifScope, bodyStmt);
+					VisitAndTagStmt(ifScope, bodyStmt, thisType);
 				}
 
 				var elseScope = new ScopedSymbolTable(symTable, symTable.FileContext, symTable.NamespaceContext, symTable.TypeContext);
 
 				foreach (var bodyStmt in stmt.ElseBody)
 				{
-					VisitAndTagStmt(elseScope, bodyStmt);
+					VisitAndTagStmt(elseScope, bodyStmt, thisType);
 				}
 
 				break;
 			case ExprStmt stmt:
-				VisitAndTagExpr(symTable, stmt.Expr);
+				VisitAndTagExpr(symTable, stmt.Expr, thisType);
 
 				break;
+
 		}
 	}
 
-	void VisitOpAssignment(ScopedSymbolTable symTable, Expr target, Expr value, string operatorSpecialName, TokenLocation location)
+	void VisitOpAssignment(ScopedSymbolTable symTable, Expr target, Expr value, string operatorSpecialName, TokenLocation location, TypeReference? thisType)
 	{
-		VisitAndTagExpr(symTable, target);
-		VisitAndTagExpr(symTable, value);
+		VisitAndTagExpr(symTable, value, thisType);
 
-		var targetType = _exprTypeMap[target];
+		switch (target)
+		{
+			case IndexExpr indexExpr:
+				// need to validate that @geti, @seti exists and the signature matches
+				VisitAndTagExpr(symTable, indexExpr.Target, thisType);
+				VisitAndTagExpr(symTable, indexExpr.Index, thisType);
 
-		ValidateOperatorOverloadExists(targetType, operatorSpecialName, 1, location);
+				var indexableTargetType = _exprTypeMap[indexExpr.Target];
+
+				// NOTE: we don't even know if indexableTargetType is resolved here
+				// the variable could have been declared by inference, for example
+
+				ValidateOperatorOverloadExists(indexableTargetType, "geti", 1, indexExpr.Location);
+				ValidateOperatorOverloadExists(indexableTargetType, "seti", 2, indexExpr.Location);
+
+				// this eventually compiles down to something like:
+				// let index = <index-expression>
+				// let indexable = <indexed-expression>
+				// let newValue = indexable.@geti(index).@add(<value-expression>)
+				// indexable.@seti(index, newValue)
+
+				// at this time, we are unable to see if a suitable @add exists,
+				// because until we definitively bind @geti, we cannot be sure of
+				// the type of its return value, which is the type that @add must
+				// exist on. A later phase must resolve this after definitive binding.
+				break;
+			default:
+				VisitAndTagExpr(symTable, target, thisType);
+
+				var targetType = _exprTypeMap[target];
+
+				// NOTE: we don't even know if targetType is resolved here
+				// the variable could have been declared by inference, for example
+
+				ValidateOperatorOverloadExists(targetType, operatorSpecialName, 1, location);
+
+				// this eventually compiles down to something like
+				// target = target.@add(value)
+				// Since target must be either a DotExpr or NameReferenceExpr here, there
+				// is no possibility of accidentally/wrongly re-evaluating an expression twice
+				// the only assignment type that permits a dynamic expression on the LHS
+				// is the indexed assignment type, but that is handled above.
+				break;
+		}
 	}
 
 	void ValidateOperatorOverloadExists(TypeReference definedOn, string operatorSpecialName, int argcount, TokenLocation location)
@@ -503,7 +625,7 @@ public class InitialNodeTagger(IEnumerable<ASTNode> nodes)
 				location
 			));
 		}
-		else if (targetMethodMatches.All(targetFunction => targetFunction.Signature.Length != argcount))
+		else if (targetMethodMatches.All(targetMethod => targetMethod.Signature.Length != argcount))
 		{
 			if (argcount == 1)
 			{
@@ -548,9 +670,9 @@ public class InitialNodeTagger(IEnumerable<ASTNode> nodes)
 	void TagLiteralExpr(Expr expr, string literalType)
 	{
 		if (
-			!_symbols.TryGetSymbol(literalType, expr.Location.File, out var stringTypeSymbol) ||
-			stringTypeSymbol[0].Type != SymbolType.Type ||
-			((TypeSymbol) stringTypeSymbol[0]).TypeArgumentNames.Length != 0)
+			!_symbols.TryGetSymbol(literalType, expr.Location.File, out var literalTypeSymbol) ||
+			literalTypeSymbol[0].Type != SymbolType.Type ||
+			((TypeSymbol) literalTypeSymbol[0]).TypeArgumentNames.Length != 0)
 		{
 			_errors.Add(new CompilationError(
 				$"Error QR310: Literal type '{literalType}' cannot be found.",
@@ -561,13 +683,13 @@ public class InitialNodeTagger(IEnumerable<ASTNode> nodes)
 		}
 		else
 		{
-			var stringTypeRef = new TypeReference((TypeSymbol) stringTypeSymbol[0], [], []);
+			var literalTypeRef = new TypeReference((TypeSymbol) literalTypeSymbol[0], [], []);
 
-			_exprTypeMap[expr] = stringTypeRef;
+			_exprTypeMap[expr] = literalTypeRef;
 		}
 	}
 
-	void VisitAndTagCallExpr(ScopedSymbolTable symTable, CallExpr callExpr)
+	void VisitAndTagCallExpr(ScopedSymbolTable symTable, CallExpr callExpr, TypeReference? thisType)
 	{
 		// only a small subset of exprs are valid call targets, so we handle them here
 		// additionally, info regarding the nature of the CallExpr is useful in evaluating some
@@ -581,28 +703,28 @@ public class InitialNodeTagger(IEnumerable<ASTNode> nodes)
 			// For now, we'll just visit and tag the expr, and the type checker will ensure
 			// that they actually resolve to a delegate or callable type
 			case DerefExpr derefExpr:
-				VisitAndTagExpr(symTable, derefExpr.Target);
+				VisitAndTagExpr(symTable, derefExpr.Target, thisType);
 				break;
 			case IndexExpr indexExpr:
-				VisitAndTagExpr(symTable, indexExpr.Target);
+				VisitAndTagExpr(symTable, indexExpr.Target, thisType);
 				break;
 
 			// NameReferenceExpr and DotExpr can be ambiguous if they resolve to multiple overloads
 			case NameReferenceExpr nameRefExpr:
 				// then check for matches based on # of type parameters
 
-				VisitAndTagExpr(symTable, nameRefExpr);
+				VisitAndTagExpr(symTable, nameRefExpr, thisType);
 				break;
 			case DotExpr dotExpr:
 				// then check for matches based on # of type parameters
 				// and then check if it is properly static/instance
 
-				VisitAndTagExpr(symTable, dotExpr.Target);
+				VisitAndTagExpr(symTable, dotExpr.Target, thisType);
 				break;
 		}
 	}
 
-	public void VisitAndTagExpr(ScopedSymbolTable symTable, Expr expr)
+	public void VisitAndTagExpr(ScopedSymbolTable symTable, Expr expr, TypeReference? thisType)
 	{
 		// we can't yet handle binary operators since we won't be able to assign overloads/calculate what the return type is
 		// until we perform type checking, so for now we'll tag select root expr nodes and let the type checker fill in the gaps
@@ -629,40 +751,41 @@ public class InitialNodeTagger(IEnumerable<ASTNode> nodes)
 				// however this does not count as a reference to go into _resolvedNodeToReferenceMap because it is not a real symbol
 				// and this node will be special-cased by the code generator anyway
 
-				if (!symTable.TryGetSymbol("this", out var thisSymbol))
+				if (thisType is null)
 				{
 					_errors.Add(new CompilationError(
 						$"Error QR308: 'this' cannot be used in this context.",
-						expr.Location
-					));
-
-					_exprTypeMap[expr] = TypeReference.ErrorType;
+						expr.Location)
+					);
 				}
 				else
 				{
-					var thisTypeRef = ((BoundFieldSymbol) thisSymbol[0]).DataType;
-
-					_exprTypeMap[expr] = thisTypeRef;
+					_exprTypeMap[expr] = thisType;
 				}
 
 				break;
 			case BinaryOpExpr binOpExpr:
-				VisitAndTagExpr(symTable, binOpExpr.Left);
-				VisitAndTagExpr(symTable, binOpExpr.Right);
+				VisitAndTagExpr(symTable, binOpExpr.Left, thisType);
+				VisitAndTagExpr(symTable, binOpExpr.Right, thisType);
 
-				// TODO: needs method lookup
+				var leftType = _exprTypeMap[binOpExpr.Left];
+
+				// NOTE: We don't even know if leftType exists, because the type could
+				// be ambiguous due to an inference, for example
+
+				ValidateOperatorOverloadExists(leftType, binOpExpr.OperatorSpecialName, 1, binOpExpr.Location);
 
 				break;
 
 			// dot, ref, deref, and call may not be overloaded
 			case CallExpr callExpr:
-				VisitAndTagCallExpr(symTable, callExpr);
+				VisitAndTagCallExpr(symTable, callExpr, thisType);
 				break;
 			case RefExpr refExpr:
-				VisitAndTagExpr(symTable, refExpr.Target);
+				VisitAndTagExpr(symTable, refExpr.Target, thisType);
 				break;
 			case DerefExpr derefExpr:
-				VisitAndTagExpr(symTable, derefExpr.Target);
+				VisitAndTagExpr(symTable, derefExpr.Target, thisType);
 
 				// ensure target is a pointer type
 
@@ -690,7 +813,7 @@ public class InitialNodeTagger(IEnumerable<ASTNode> nodes)
 
 				break;
 			case DotExpr dotExpr:
-				VisitAndTagExpr(symTable, dotExpr.Target);
+				VisitAndTagExpr(symTable, dotExpr.Target, thisType);
 
 				NamespaceReference? targetNamespaceRef = null;
 				TypeReference? targetTypeRef = null;
@@ -846,6 +969,15 @@ public class InitialNodeTagger(IEnumerable<ASTNode> nodes)
 
 				break;
 			case IndexExpr indexExpr: // requires method lookup and containing expr for @geti
+				VisitAndTagExpr(symTable, indexExpr.Target, thisType);
+				VisitAndTagExpr(symTable, indexExpr.Index, thisType);
+
+				var indexableTargetType = _exprTypeMap[indexExpr.Target];
+
+				// NOTE: we don't even know if indexableTargetType is resolved here
+				// the variable could have been declared by inference, for example
+
+				ValidateOperatorOverloadExists(indexableTargetType, "geti", 1, indexExpr.Location);
 				break;
 			case NameReferenceExpr nameReferenceExpr:
 				if (!symTable.TryGetSymbol(
@@ -878,7 +1010,7 @@ public class InitialNodeTagger(IEnumerable<ASTNode> nodes)
 										nameReferenceExpr.Location
 									));
 
-									_exprTypeMap[expr] = TypeReference.ErrorType;	
+									_exprTypeMap[expr] = TypeReference.ErrorType;
 
 									break;
 								}
@@ -906,9 +1038,16 @@ public class InitialNodeTagger(IEnumerable<ASTNode> nodes)
 				}
 				break;
 			case UnaryOpExpr unaryOpExpr:
-				VisitAndTagExpr(symTable, unaryOpExpr.Target);
+				VisitAndTagExpr(symTable, unaryOpExpr.Target, thisType);
 
 				// requires method lookup
+
+				var unaryOpTargetType = _exprTypeMap[unaryOpExpr.Target];
+
+				// NOTE: We don't even know if unaryOpTargetType exists, because the type could
+				// be ambiguous due to an inference, for example
+
+				ValidateOperatorOverloadExists(unaryOpTargetType, unaryOpExpr.OperatorSpecialName, 0, unaryOpExpr.Location);
 				break;
 			default:
 				throw new NotImplementedException($"SymbolChecker.VisitAndTagExpr: Unhandled expression type {expr.GetType().Name}");

@@ -3,7 +3,7 @@ using QorLang.Compiler.Lexer;
 
 namespace QorLang.Compiler.Parser.Nodes.Expressions;
 
-public class NotEqualExpr(Expr left, Expr right, TokenLocation location) : BinaryOpExpr(left, right, location)
+public class NotEqualExpr(Expr left, Expr right, TokenLocation location) : BinaryOpExpr(left, right, "neq", location)
 {
 
 	public override bool Equals(object? obj)

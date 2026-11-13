@@ -25,16 +25,12 @@ public class DefaultParser(IEnumerable<Token> tokens)
 	{
 		return assignmentType switch
 		{
-			TokenType.Assign => leftExpr switch {
-				IndexExpr indexExpr => new IndexAssignStmt(indexExpr, rightExpr, location),
-				NameReferenceExpr or DotExpr => new AssignStmt(leftExpr, rightExpr, location),
-				_ => throw new Exception("Unreachable code: Unrecognized left expression type for assignment.")
-			},
-			TokenType.AddAssign => FormAssignStmt(TokenType.Assign, leftExpr, new AddExpr(leftExpr, rightExpr, location), location),
-			TokenType.SubAssign => FormAssignStmt(TokenType.Assign, leftExpr, new SubExpr(leftExpr, rightExpr, location), location),
-			TokenType.MulAssign => FormAssignStmt(TokenType.Assign, leftExpr, new MulExpr(leftExpr, rightExpr, location), location),
-			TokenType.DivAssign => FormAssignStmt(TokenType.Assign, leftExpr, new DivExpr(leftExpr, rightExpr, location), location),
-			TokenType.ModAssign => FormAssignStmt(TokenType.Assign, leftExpr, new ModExpr(leftExpr, rightExpr, location), location),
+			TokenType.Assign => new AssignStmt(leftExpr, rightExpr, location),
+			TokenType.AddAssign => new AddAssignStmt(leftExpr, rightExpr, location),
+			TokenType.SubAssign => new SubAssignStmt(leftExpr, rightExpr, location),
+			TokenType.MulAssign => new MulAssignStmt(leftExpr, rightExpr, location),
+			TokenType.DivAssign => new DivAssignStmt(leftExpr, rightExpr, location),
+			TokenType.ModAssign => new ModAssignStmt(leftExpr, rightExpr, location),
 			_ => throw new Exception("Unreachable code: Unrecognized assignment type.")
 		};
 	}

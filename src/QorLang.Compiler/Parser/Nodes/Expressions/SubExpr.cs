@@ -3,7 +3,7 @@ using QorLang.Compiler.Lexer;
 
 namespace QorLang.Compiler.Parser.Nodes.Expressions;
 
-public class SubExpr(Expr left, Expr right, TokenLocation location) : BinaryOpExpr(left, right, location)
+public class SubExpr(Expr left, Expr right, TokenLocation location) : BinaryOpExpr(left, right, "sub", location)
 {
 
 	public override bool Equals(object? obj)

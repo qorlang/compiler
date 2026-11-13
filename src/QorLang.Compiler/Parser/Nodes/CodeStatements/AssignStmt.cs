@@ -10,9 +10,6 @@ public class AssignStmt(
 	TokenLocation location
 ) : CodeStmt(location)
 {
-	/// <summary>
-	/// Must be a <see cref="DotExpr"/> or non-generic <see cref="NameReferenceExpr"/>
-	/// </summary>
 	public readonly Expr Target = target;
 	public readonly Expr Value = value;
 

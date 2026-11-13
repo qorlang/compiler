@@ -3,7 +3,7 @@ using QorLang.Compiler.Lexer;
 
 namespace QorLang.Compiler.Parser.Nodes.Expressions;
 
-public class RefExpr(Expr target, TokenLocation location) : UnaryOpExpr(target, location)
+public class RefExpr(Expr target, TokenLocation location) : UnaryOpExpr(target, "<invalid>", location)
 {
 
 	public override bool Equals(object? obj)

@@ -3,7 +3,7 @@ using QorLang.Compiler.Lexer;
 
 namespace QorLang.Compiler.Parser.Nodes.Expressions;
 
-public class PostIncrementExpr(Expr target, TokenLocation location) : UnaryOpExpr(target, location)
+public class PostIncrementExpr(Expr target, TokenLocation location) : UnaryOpExpr(target, "inc", location)
 {
 
 	public override bool Equals(object? obj)
