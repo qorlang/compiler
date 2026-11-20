@@ -108,22 +108,6 @@ public class TopLevelStatements
 		Assert.Contains("QR204", errors.First().Message);
 	}
 
-	[Theory]
-	[InlineData("libqor/core")]
-	[InlineData("libqor/threads")]
-	[InlineData("myassembly")]
-	public void Parse_ValidImportPaths_ReturnsImportNode(string path)
-	{
-		string code = $"""
-		import "{path}";
-		""";
-
-		var (nodes, errors) = TestHelper.ParseCode(code);
-
-		Assert.Empty(errors);
-		Assert.Single(nodes, new ImportNode(path, default));
-	}
-
 	[Fact]
 	public void Parse_ImportMissingPath_ReturnsError()
 	{
@@ -135,24 +119,6 @@ public class TopLevelStatements
 
 		Assert.Empty(nodes);
 		Assert.Single(errors);
-	}
-
-	[Fact]
-	public void Parse_MultipleImports_SuccessfullyParsed()
-	{
-		string code = """
-		import "libqor/core";
-		import "libqor/threads";
-		import "mylib/utils";
-		""";
-
-		var (nodes, errors) = TestHelper.ParseCode(code);
-
-		Assert.Empty(errors);
-		Assert.Equal(3, nodes.Count());
-		Assert.Contains(new ImportNode("libqor/core", default), nodes);
-		Assert.Contains(new ImportNode("libqor/threads", default), nodes);
-		Assert.Contains(new ImportNode("mylib/utils", default), nodes);
 	}
 
 	[Fact]
@@ -582,20 +548,6 @@ public class TopLevelStatements
 	}
 
 	[Fact]
-	public void Parse_PubBeforeImport_ReturnsError()
-	{
-		string code = """
-		pub import "module";
-		""";
-
-		var (nodes, errors) = TestHelper.ParseCode(code);
-
-		Assert.Single(errors);
-		Assert.Contains("QR202", errors.First().Message);
-		Assert.Contains("Expected declaration after 'pub'", errors.First().Message);
-	}
-
-	[Fact]
 	public void Parse_PubBeforeUsingStatement_ReturnsError()
 	{
 		string code = """
@@ -673,10 +625,10 @@ public class TopLevelStatements
 
 		var globalNode = Assert.IsType<GlobalDeclarationNode>(nodes.First());
 		Assert.Equal("other", globalNode.Name);
-		
+
 		Assert.True(globalNode.Protections.ContainsKey(AccessLevel.Public));
 		Assert.Equal(DataProtection.ReadWrite, globalNode.Protections[AccessLevel.Public][0]);
-		
+
 		// Simple syntax applies to all access levels
 		Assert.True(globalNode.Protections.ContainsKey(AccessLevel.Private));
 		Assert.Equal(DataProtection.ReadWrite, globalNode.Protections[AccessLevel.Private][0]);
@@ -713,14 +665,14 @@ public class TopLevelStatements
 
 		var globalNode = Assert.IsType<GlobalDeclarationNode>(nodes.First());
 		Assert.Equal("state", globalNode.Name);
-		
+
 		// Type has one reference level (State&), so protections array should have length 2
 		// Index 0 = base type protection, Index 1 = first ref (&) protection
 		Assert.True(globalNode.Protections.ContainsKey(AccessLevel.Public));
 		Assert.Equal(2, globalNode.Protections[AccessLevel.Public].Length);
 		Assert.Equal(DataProtection.ReadOnly, globalNode.Protections[AccessLevel.Public][0]);
 		Assert.Equal(DataProtection.ReadOnly, globalNode.Protections[AccessLevel.Public][1]);
-		
+
 		Assert.True(globalNode.Protections.ContainsKey(AccessLevel.Private));
 		Assert.Equal(2, globalNode.Protections[AccessLevel.Private].Length);
 		Assert.Equal(DataProtection.ReadWrite, globalNode.Protections[AccessLevel.Private][0]);
@@ -742,11 +694,11 @@ public class TopLevelStatements
 		Assert.Empty(errors);
 		var globalNode = Assert.IsType<GlobalDeclarationNode>(nodes.First());
 		Assert.Equal("data", globalNode.Name);
-		
+
 		// Public should have ReadOnly
 		Assert.True(globalNode.Protections.ContainsKey(AccessLevel.Public));
 		Assert.Equal(DataProtection.ReadOnly, globalNode.Protections[AccessLevel.Public][0]);
-		
+
 		// Private should have ReadWrite
 		Assert.True(globalNode.Protections.ContainsKey(AccessLevel.Private));
 		Assert.Equal(DataProtection.ReadWrite, globalNode.Protections[AccessLevel.Private][0]);
@@ -796,6 +748,6 @@ public class TopLevelStatements
 		Assert.Equal("state", globals[0].Name);
 		Assert.Equal("other", globals[1].Name);
 		Assert.Equal("cache", globals[2].Name);
-	}	
+	}
 }
 

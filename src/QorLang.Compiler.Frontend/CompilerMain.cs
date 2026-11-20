@@ -1,6 +1,8 @@
 ﻿using System.Text.Json;
 using CommandLine;
+using Microsoft.Extensions.Options;
 using QorLang.Compiler.Lexer;
+using QorLang.Compiler.NodeTagger;
 using QorLang.Compiler.Parser;
 
 namespace QorLang.Compiler.Frontend;
@@ -16,11 +18,17 @@ public class CompilerOptions
 	[Option('o', "output", HelpText = "Output file path")]
 	public string? OutputFile { get; set; }
 
-	[Option('t', "tokens", HelpText = "Output tokens instead of an assembly", SetName = "tokens")]
+	[Option('t', "tokens", HelpText = "Output tokens instead of an assembly")]
 	public bool OutputTokens { get; set; }
 
-	[Option('a', "ast", HelpText = "Output AST instead of an assembly", SetName = "ast")]
+	[Option('a', "ast", HelpText = "Output AST instead of an assembly")]
 	public bool OutputAST { get; set; }
+
+	[Option("type-info", HelpText = "Output AST tagged with type and symbol info")]
+	public bool Typeinfo { get; set; }
+
+	[Option("module-refs", Separator = ',', HelpText = "Specify external assembly references")]
+	public IEnumerable<string> ReferencedModules { get; set; } = [];
 }
 
 public class CompilerMain
@@ -55,7 +63,7 @@ public class CompilerMain
 				writer.WriteLine($"{token.Type}: {JsonSerializer.Serialize(token.Value)} at {token.Location}");
 			}
 		}
-		else if (opts.OutputAST)
+		else
 		{
 			var tokens = lexer.Tokenize();
 			var parser = new DefaultParser(tokens);
@@ -68,22 +76,28 @@ public class CompilerMain
 					Console.Error.WriteLine(error.ToString());
 				}
 
-				Environment.Exit(1);				
+				Environment.Exit(1);
 			}
 
-			string outputFile = opts.OutputFile ?? Path.ChangeExtension(opts.SourceFile, ".ast.json");
-
-			var output = new
+			if (opts.OutputAST)
 			{
-				nodes = nodes.Select(n => JsonDocument.Parse(n.ToString()).RootElement)
-			};
+				string outputFile = opts.OutputFile ?? Path.ChangeExtension(opts.SourceFile, ".ast.json");
 
-			string json = JsonSerializer.Serialize(output, new JsonSerializerOptions { WriteIndented = true });
-			
-			File.WriteAllText(outputFile, json);
-		}
-		else
-		{
+				var output = new
+				{
+					nodes = nodes.Select(n => JsonDocument.Parse(n.ToString()).RootElement)
+				};
+
+				string json = JsonSerializer.Serialize(output, new JsonSerializerOptions { WriteIndented = true });
+
+				File.WriteAllText(outputFile, json);
+
+				return;
+			}
+
+			var moduleImporter = new MetadataImporter();
+			var nodeTagger = new InitialNodeTagger(nodes, moduleImporter.ImportModule, opts.ReferencedModules);
+
 			throw new NotImplementedException("Code generation not implemented yet.");
 		}
 	}

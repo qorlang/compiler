@@ -21,9 +21,9 @@ using SymbolCheckerResult = (
 /// Checks symbols and assigns inferred types to expressions. Does not perform assignment validity or type compatibility checks.
 /// </summary>
 /// <param name="nodes"></param>
-public class InitialNodeTagger(IEnumerable<ASTNode> nodes)
+public class InitialNodeTagger
 {
-	readonly ASTNode[] _nodes = [..nodes];
+	readonly ASTNode[] _nodes = [];
 	readonly GlobalSymbolTable _symbols = new();
 
 	// types can have scoped symbol tables too because their members do not need to be qualified, and they may also have type arguments
@@ -33,7 +33,24 @@ public class InitialNodeTagger(IEnumerable<ASTNode> nodes)
 	readonly Dictionary<Expr, TypeReference> _exprTypeMap = [with(ReferenceEqualityComparer.Instance)];
 	readonly List<CompilationError> _errors = [];
 
+	public InitialNodeTagger(IEnumerable<ASTNode> nodes, ImportModule importModule,
+		IEnumerable<string> referencedModules)
+	{
+		_nodes = [.. nodes];
+
+		foreach (var module in referencedModules)
+		{
+			var stdlibImportLocation = new TokenLocation("<none>", 0, 0);
+			var (stdSymbols, stdlibImportErrors) = importModule(module, stdlibImportLocation);
+
+			_errors.AddRange(stdlibImportErrors.Count > 0
+				? stdlibImportErrors
+				: _symbols.AddImport(stdSymbols, stdlibImportLocation));
+		}
+	}
+
 	delegate bool TypeSymbolGetter(TypeReferenceNode bode, out Symbol[] typeSymbolMatches);
+	public delegate (GlobalSymbolTable SymbolTable, List<CompilationError> Errors) ImportModule(string modulePath, TokenLocation importLocation);
 
 	TypeReference ResolveTypeReference(TypeReferenceNode node, bool allowVoid = false)
 	{
@@ -124,7 +141,7 @@ public class InitialNodeTagger(IEnumerable<ASTNode> nodes)
 		return null!;
 	}
 
-	public SymbolCheckerResult Check(Func<string, (GlobalSymbolTable SymbolTable, List<CompilationError> Errors)> ImportModule)
+	public SymbolCheckerResult Tag()
 	{
 		var currentNamespace = string.Empty;
 
@@ -136,19 +153,6 @@ public class InitialNodeTagger(IEnumerable<ASTNode> nodes)
 			{
 				case NamespaceNode namespaceNode:
 					currentNamespace = namespaceNode.Name;
-					break;
-				case ImportNode importNode:
-					var (symbolTable, errors) = ImportModule(importNode.ModulePath);
-
-					if (errors.Count > 0)
-					{
-						_errors.AddRange(errors);
-					}
-					else
-					{
-						_errors.AddRange(_symbols.AddImport(symbolTable, importNode.Location));
-					}
-
 					break;
 				case UsingNamespaceNode usingNode:
 					_errors.AddRange(_symbols.UseNamespace(usingNode.Name, usingNode.Location));
@@ -458,12 +462,13 @@ public class InitialNodeTagger(IEnumerable<ASTNode> nodes)
 						VisitAndTagExpr(symTable, indexExpr.Target, thisType);
 						VisitAndTagExpr(symTable, indexExpr.Index, thisType);
 
-						var indexableTargetType = _exprTypeMap[indexExpr.Target];
-
 						// NOTE: we don't even know if indexableTargetType is resolved here
 						// the variable could have been declared by inference, for example
 
-						ValidateOperatorOverloadExists(indexableTargetType, "seti", 2, indexExpr.Location);
+						if (_exprTypeMap.TryGetValue(indexExpr.Target, out var indexableTargetType))
+						{
+							ValidateOperatorOverloadExists(indexableTargetType, "seti", 2, indexExpr.Location);
+						}
 
 						// this eventually compiles down to something like:
 						// indexable.@seti(index, value)
@@ -572,13 +577,14 @@ public class InitialNodeTagger(IEnumerable<ASTNode> nodes)
 				VisitAndTagExpr(symTable, indexExpr.Target, thisType);
 				VisitAndTagExpr(symTable, indexExpr.Index, thisType);
 
-				var indexableTargetType = _exprTypeMap[indexExpr.Target];
-
 				// NOTE: we don't even know if indexableTargetType is resolved here
 				// the variable could have been declared by inference, for example
 
-				ValidateOperatorOverloadExists(indexableTargetType, "geti", 1, indexExpr.Location);
-				ValidateOperatorOverloadExists(indexableTargetType, "seti", 2, indexExpr.Location);
+				if (_exprTypeMap.TryGetValue(indexExpr.Target, out var indexableTargetType))
+				{
+					ValidateOperatorOverloadExists(indexableTargetType, "geti", 1, indexExpr.Location);
+					ValidateOperatorOverloadExists(indexableTargetType, "seti", 2, indexExpr.Location);
+				}
 
 				// this eventually compiles down to something like:
 				// let index = <index-expression>
@@ -594,12 +600,13 @@ public class InitialNodeTagger(IEnumerable<ASTNode> nodes)
 			default:
 				VisitAndTagExpr(symTable, target, thisType);
 
-				var targetType = _exprTypeMap[target];
-
 				// NOTE: we don't even know if targetType is resolved here
 				// the variable could have been declared by inference, for example
 
-				ValidateOperatorOverloadExists(targetType, operatorSpecialName, 1, location);
+				if (_exprTypeMap.TryGetValue(target, out var targetType))
+				{
+					ValidateOperatorOverloadExists(targetType, operatorSpecialName, 1, location);
+				}
 
 				// this eventually compiles down to something like
 				// target = target.@add(value)
@@ -768,12 +775,13 @@ public class InitialNodeTagger(IEnumerable<ASTNode> nodes)
 				VisitAndTagExpr(symTable, binOpExpr.Left, thisType);
 				VisitAndTagExpr(symTable, binOpExpr.Right, thisType);
 
-				var leftType = _exprTypeMap[binOpExpr.Left];
-
 				// NOTE: We don't even know if leftType exists, because the type could
 				// be ambiguous due to an inference, for example
 
-				ValidateOperatorOverloadExists(leftType, binOpExpr.OperatorSpecialName, 1, binOpExpr.Location);
+				if (_exprTypeMap.TryGetValue(binOpExpr.Left, out var leftType))
+				{
+					ValidateOperatorOverloadExists(leftType, binOpExpr.OperatorSpecialName, 1, binOpExpr.Location);
+				}
 
 				break;
 
@@ -789,26 +797,27 @@ public class InitialNodeTagger(IEnumerable<ASTNode> nodes)
 
 				// ensure target is a pointer type
 
-				if (_exprTypeMap[derefExpr.Target].IndirectionLayers[^1] != IndirectionLayer.PointerTo)
+				if (_exprTypeMap.TryGetValue(derefExpr.Target, out var derefExprTargetType))
 				{
-					_errors.Add(new CompilationError(
-						$"Error QR309: Cannot dereference a non-pointer type.",
-						derefExpr.Location
-					));
+					if (derefExprTargetType.IndirectionLayers[^1] != IndirectionLayer.PointerTo)
+					{
+						_errors.Add(new CompilationError(
+							$"Error QR309: Cannot dereference a non-pointer type.",
+							derefExpr.Location
+						));
 
-					_exprTypeMap[derefExpr] = TypeReference.ErrorType;
-				}
-				else
-				{
-					var targetType = _exprTypeMap[derefExpr.Target];
+						_exprTypeMap[derefExpr] = TypeReference.ErrorType;
+					}
+					else
+					{
+						var derefType = new TypeReference(
+							derefExprTargetType.TypeSymbol,
+							derefExprTargetType.TypeArguments,
+							derefExprTargetType.IndirectionLayers[..^1]
+						);
 
-					var derefType = new TypeReference(
-						targetType.TypeSymbol,
-						targetType.TypeArguments,
-						targetType.IndirectionLayers[..^1]
-					);
-
-					_exprTypeMap[derefExpr] = derefType;
+						_exprTypeMap[derefExpr] = derefType;
+					}
 				}
 
 				break;

@@ -6,7 +6,7 @@ public class DefaultLexer(string fileName, string source)
 	[
 		"if", "else", "while", "for", "return",
 		"let", "rw", "ro", "type", "pub", "break",
-		"continue", "import", "using", "true", "false",
+		"continue", "using", "true", "false",
 		"i8", "i16", "i32", "i64", "nint", "u8", "u16",
 		"u32", "u64", "nuint", "f32", "f64", "string",
 		"char", "bool", "void", "namespace", "nameof",
@@ -170,7 +170,7 @@ public class DefaultLexer(string fileName, string source)
 				_currCol += 2;
 				return (result, null);
 			}
-			
+
 			var error = GenerateErrorToken($"Error QR105: Unknown escape sequence: \\{escapeChar}");
 			return ('\0', error);
 		}

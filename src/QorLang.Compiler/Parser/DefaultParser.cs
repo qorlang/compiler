@@ -149,17 +149,6 @@ public class DefaultParser(IEnumerable<Token> tokens)
 	}
 
 	/// <summary>
-	/// Parses an import given that the last consumed token was the 'import' keyword.
-	/// </summary>
-	/// <returns></returns>
-	ASTNode ParseImport()
-	{
-		if (!ExpectNextToken(TokenType.StringLiteral, out var modulePathToken)) return ErrorOutOfCurrentContext();
-
-		return new ImportNode(modulePathToken.Value, modulePathToken.Location);
-	}
-
-	/// <summary>
 	/// Parses a namespace declaration given that the last consumed token was the 'namespace' keyword.
 	/// </summary>
 	/// <returns></returns>
@@ -1802,12 +1791,12 @@ public class DefaultParser(IEnumerable<Token> tokens)
 				{
 					continue;
 				}
-				
+
 				if (nextToken.Type == TokenType.GreaterThan)
 				{
 					break;
 				}
-				
+
 				_errors.Add(GenerateError($"Error QR202: Expected ',' or '>' in type parameter list, but got {TokenUtils.ToString(nextToken)} instead.", nextToken));
 
 				return ErrorOutOfCurrentContext();
@@ -2109,7 +2098,7 @@ public class DefaultParser(IEnumerable<Token> tokens)
 
 				break;
 			}
-			
+
 			if (nextToken.Type == TokenType.Keyword)
 			{
 				if (nextToken.Value == "type")
@@ -2118,7 +2107,7 @@ public class DefaultParser(IEnumerable<Token> tokens)
 
 					return ErrorOutOfCurrentCodeBlock();
 				}
-				
+
 				if (nextToken.Value == "pub")
 				{
 					if (_currentDeclIsPublic)
@@ -2178,7 +2167,7 @@ public class DefaultParser(IEnumerable<Token> tokens)
 				return ErrorOutOfCurrentCodeBlock();
 			}
 		}
-		
+
 		return new TypeDefinitionNode(nameToken.Value, typeIsPublic ? AccessLevel.Public : AccessLevel.Private, [..typeParameters], [..memberDeclarations],nameToken.Location);
 	}
 
@@ -2335,12 +2324,6 @@ public class DefaultParser(IEnumerable<Token> tokens)
 						nodes.Add(globalNode);
 
 						continue; // ParseGlobalDeclaration handles the semicolon itself, so we can skip the check at the end of the loop
-					}
-					else if (token.Value == "import")
-					{
-						var importNode = ParseImport();
-
-						nodes.Add(importNode);
 					}
 					else if (token.Value == "namespace")
 					{
