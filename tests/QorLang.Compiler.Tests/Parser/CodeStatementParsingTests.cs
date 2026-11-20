@@ -158,7 +158,7 @@ public class CodeStatementParsingTests
 	#region Assignment Statement Tests
 
 	[Fact]
-	public void Parse_SimpleAssignment_ReturnsAssignmentStmt()
+	public void Parse_SimpleAssignment_ReturnsAssignStmt()
 	{
 		var code = """
 		main()
@@ -179,7 +179,7 @@ public class CodeStatementParsingTests
 	}
 
 	[Fact]
-	public void Parse_AssignmentWithExpression_ReturnsAssignmentStmt()
+	public void Parse_AssignmentWithExpression_ReturnsAssignStmt()
 	{
 		var code = """
 		main()
@@ -199,7 +199,7 @@ public class CodeStatementParsingTests
 	}
 
 	[Fact]
-	public void Parse_MemberAssignment_ReturnsAssignmentStmt()
+	public void Parse_MemberAssignment_ReturnsAssignStmt()
 	{
 		var code = """
 		main()
@@ -220,7 +220,7 @@ public class CodeStatementParsingTests
 	}
 
 	[Fact]
-	public void Parse_IndexAssignment_ReturnsIndexAssignmentStmt()
+	public void Parse_IndexAssignment_ReturnsAssignStmt()
 	{
 		var code = """
 		main()
@@ -233,14 +233,14 @@ public class CodeStatementParsingTests
 
 		Assert.Empty(errors);
 		var funcNode = Assert.IsType<FunctionDefinitionNode>(nodes.First());
-		var stmt = Assert.IsType<IndexAssignStmt>(funcNode.Body.First());
+		var stmt = Assert.IsType<AssignStmt>(funcNode.Body.First());
 		var target = Assert.IsType<IndexExpr>(stmt.Target);
 		var indexValue = Assert.IsType<IntegerLiteralExpr>(target.Index);
 		Assert.Equal("0", indexValue.Value);
 	}
 
 	[Fact]
-	public void Parse_ChainedIndexAssignment_ReturnsIndexAssignmentStmt()
+	public void Parse_ChainedIndexAssignment_ReturnsAssignStmt()
 	{
 		var code = """
 		main()
@@ -253,7 +253,7 @@ public class CodeStatementParsingTests
 
 		Assert.Empty(errors);
 		var funcNode = Assert.IsType<FunctionDefinitionNode>(nodes.First());
-		var stmt = Assert.IsType<IndexAssignStmt>(funcNode.Body.First());
+		var stmt = Assert.IsType<AssignStmt>(funcNode.Body.First());
 		var target = Assert.IsType<IndexExpr>(stmt.Target);
 		var indexValue = Assert.IsType<IntegerLiteralExpr>(target.Index);
 		Assert.Equal("1", indexValue.Value);
@@ -263,7 +263,7 @@ public class CodeStatementParsingTests
 	}
 
 	[Fact]
-	public void Parse_AddAssign_ReturnsAssignStmt()
+	public void Parse_AddAssign_ReturnsAddAssignStmt()
 	{
 		var code = """
 		main()
@@ -276,18 +276,15 @@ public class CodeStatementParsingTests
 
 		Assert.Empty(errors);
 		var funcNode = Assert.IsType<FunctionDefinitionNode>(nodes.First());
-		var stmt = Assert.IsType<AssignStmt>(funcNode.Body.First());
+		var stmt = Assert.IsType<AddAssignStmt>(funcNode.Body.First());
 		var target = Assert.IsType<NameReferenceExpr>(stmt.Target);
 		Assert.Equal("x", target.Name);
-		var value = Assert.IsType<AddExpr>(stmt.Value);
-		var left = Assert.IsType<NameReferenceExpr>(value.Left);
-		Assert.Equal("x", left.Name);
-		var right = Assert.IsType<IntegerLiteralExpr>(value.Right);
+		var right = Assert.IsType<IntegerLiteralExpr>(stmt.Value);
 		Assert.Equal("10", right.Value);
 	}
 
 	[Fact]
-	public void Parse_SubAssign_ReturnsAssignStmt()
+	public void Parse_SubAssign_ReturnsSubAssignStmt()
 	{
 		var code = """
 		main()
@@ -300,18 +297,15 @@ public class CodeStatementParsingTests
 
 		Assert.Empty(errors);
 		var funcNode = Assert.IsType<FunctionDefinitionNode>(nodes.First());
-		var stmt = Assert.IsType<AssignStmt>(funcNode.Body.First());
+		var stmt = Assert.IsType<SubAssignStmt>(funcNode.Body.First());
 		var target = Assert.IsType<NameReferenceExpr>(stmt.Target);
 		Assert.Equal("x", target.Name);
-		var value = Assert.IsType<SubExpr>(stmt.Value);
-		var left = Assert.IsType<NameReferenceExpr>(value.Left);
-		Assert.Equal("x", left.Name);
-		var right = Assert.IsType<IntegerLiteralExpr>(value.Right);
+		var right = Assert.IsType<IntegerLiteralExpr>(stmt.Value);
 		Assert.Equal("5", right.Value);
 	}
 
 	[Fact]
-	public void Parse_MulAssign_ReturnsAssignStmt()
+	public void Parse_MulAssign_ReturnsMulAssignStmt()
 	{
 		var code = """
 		main()
@@ -324,18 +318,15 @@ public class CodeStatementParsingTests
 
 		Assert.Empty(errors);
 		var funcNode = Assert.IsType<FunctionDefinitionNode>(nodes.First());
-		var stmt = Assert.IsType<AssignStmt>(funcNode.Body.First());
+		var stmt = Assert.IsType<MulAssignStmt>(funcNode.Body.First());
 		var target = Assert.IsType<NameReferenceExpr>(stmt.Target);
 		Assert.Equal("x", target.Name);
-		var value = Assert.IsType<MulExpr>(stmt.Value);
-		var left = Assert.IsType<NameReferenceExpr>(value.Left);
-		Assert.Equal("x", left.Name);
-		var right = Assert.IsType<IntegerLiteralExpr>(value.Right);
+		var right = Assert.IsType<IntegerLiteralExpr>(stmt.Value);
 		Assert.Equal("3", right.Value);
 	}
 
 	[Fact]
-	public void Parse_DivAssign_ReturnsAssignStmt()
+	public void Parse_DivAssign_ReturnsDivAssignStmt()
 	{
 		var code = """
 		main()
@@ -348,18 +339,15 @@ public class CodeStatementParsingTests
 
 		Assert.Empty(errors);
 		var funcNode = Assert.IsType<FunctionDefinitionNode>(nodes.First());
-		var stmt = Assert.IsType<AssignStmt>(funcNode.Body.First());
+		var stmt = Assert.IsType<DivAssignStmt>(funcNode.Body.First());
 		var target = Assert.IsType<NameReferenceExpr>(stmt.Target);
 		Assert.Equal("x", target.Name);
-		var value = Assert.IsType<DivExpr>(stmt.Value);
-		var left = Assert.IsType<NameReferenceExpr>(value.Left);
-		Assert.Equal("x", left.Name);
-		var right = Assert.IsType<IntegerLiteralExpr>(value.Right);
+		var right = Assert.IsType<IntegerLiteralExpr>(stmt.Value);
 		Assert.Equal("2", right.Value);
 	}
 
 	[Fact]
-	public void Parse_ModAssign_ReturnsAssignStmt()
+	public void Parse_ModAssign_ReturnsModAssignStmt()
 	{
 		var code = """
 		main()
@@ -372,18 +360,15 @@ public class CodeStatementParsingTests
 
 		Assert.Empty(errors);
 		var funcNode = Assert.IsType<FunctionDefinitionNode>(nodes.First());
-		var stmt = Assert.IsType<AssignStmt>(funcNode.Body.First());
+		var stmt = Assert.IsType<ModAssignStmt>(funcNode.Body.First());
 		var target = Assert.IsType<NameReferenceExpr>(stmt.Target);
 		Assert.Equal("x", target.Name);
-		var value = Assert.IsType<ModExpr>(stmt.Value);
-		var left = Assert.IsType<NameReferenceExpr>(value.Left);
-		Assert.Equal("x", left.Name);
-		var right = Assert.IsType<IntegerLiteralExpr>(value.Right);
+		var right = Assert.IsType<IntegerLiteralExpr>(stmt.Value);
 		Assert.Equal("4", right.Value);
 	}
 
 	[Fact]
-	public void Parse_AddIndexAssignment_ReturnsIndexAssignStmt()
+	public void Parse_AddIndexAssignment_ReturnsAssignStmt()
 	{
 		var code = """
 		main()
@@ -396,21 +381,19 @@ public class CodeStatementParsingTests
 
 		Assert.Empty(errors);
 		var funcNode = Assert.IsType<FunctionDefinitionNode>(nodes.First());
-		var stmt = Assert.IsType<IndexAssignStmt>(funcNode.Body.First());
+		var stmt = Assert.IsType<AddAssignStmt>(funcNode.Body.First());
 		var target = Assert.IsType<IndexExpr>(stmt.Target);
 		var arrayName = Assert.IsType<NameReferenceExpr>(target.Target);
 		Assert.Equal("arr", arrayName.Name);
 		var index = Assert.IsType<IntegerLiteralExpr>(target.Index);
 		Assert.Equal("0", index.Value);
-		var value = Assert.IsType<AddExpr>(stmt.Value);
-		var left = Assert.IsType<IndexExpr>(value.Left);
-		var right = Assert.IsType<IntegerLiteralExpr>(value.Right);
+		var right = Assert.IsType<IntegerLiteralExpr>(stmt.Value);
 		Assert.Equal("10", right.Value);
 	}
 
 
 	[Fact]
-	public void Parse_ChainedMemberAssignment_ReturnsAssignmentStmt()
+	public void Parse_ChainedMemberAssignment_ReturnsAssignStmt()
 	{
 		var code = """
 		main()
