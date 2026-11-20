@@ -10,13 +10,31 @@ public class MetadataImporter
     {
         List<CompilationError> errors = [];
 
-        errors.Add(
-            new CompilationError(
-                $"Error QR317: Module {modulePath} not found.",
-                importLocation
-            )
-        );
+        var fileInfo = new FileInfo(modulePath);
 
-        return (null!, errors);
+        if (!fileInfo.Exists)
+        {
+            errors.Add(
+                new CompilationError(
+                    $"Error QR317: Module {modulePath} not found.",
+                    importLocation
+                )
+            );
+
+            return (null!, errors);
+        }
+
+        var reader = new MetadataReader(fileInfo);
+        GlobalSymbolTable symbolTable = new();
+
+        foreach (var symbol in reader.YieldSymbols())
+        {
+            // technically a compiled module should never result in symbol errors
+            // but since this API exists we might as well accumulate the errors
+            // if they somehow exist
+            errors.AddRange(symbolTable.AddSymbol(symbol, new TokenLocation($"<import: {modulePath}>", 0, 0)));
+        }
+
+        return (symbolTable, errors);
     }
 }

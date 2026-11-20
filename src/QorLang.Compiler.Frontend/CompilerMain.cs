@@ -98,6 +98,13 @@ public class CompilerMain
 			var moduleImporter = new MetadataImporter();
 			var nodeTagger = new InitialNodeTagger(nodes, moduleImporter.ImportModule, opts.ReferencedModules);
 
+			var taggerRes = nodeTagger.Tag();
+
+			foreach (var error in taggerRes.Errors)
+			{
+				Console.Error.WriteLine(error.ToString());
+			}
+
 			throw new NotImplementedException("Code generation not implemented yet.");
 		}
 	}
